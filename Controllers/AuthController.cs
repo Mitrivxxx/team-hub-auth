@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using team_hub_auth.Data;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
+using team_hub_auth.Services;
 
 namespace team_hub_auth.Controllers;
 
@@ -28,7 +29,7 @@ public class AuthController(AuthDbContext db) : ControllerBase
             Username = req.Username,
             Name = req.Name,
             Surname = req.Surname,
-            Password = req.Password,
+            Password = PasswordHasher.Hash(req.Password),
             RoleId = role.Id
         };
 
@@ -44,7 +45,7 @@ public class AuthController(AuthDbContext db) : ControllerBase
         var user = await db.Users.Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Username == req.Username);
 
-        if (user is null || user.Password != req.Password)
+        if (user is null || !PasswordHasher.Verify(req.Password, user.Password))
             return Unauthorized();
 
         return Ok(ToResponse(user, user.Role.Name));
