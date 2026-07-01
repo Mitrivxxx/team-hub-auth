@@ -1,6 +1,0 @@
-@team_hub_auth_HostAddress = http://localhost:5112
-
-GET {{team_hub_auth_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
