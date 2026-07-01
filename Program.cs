@@ -1,25 +1,17 @@
-using Microsoft.EntityFrameworkCore;
-using team_hub_auth.Data;
+using team_hub_auth.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AuthDbContext>(o =>
-    o.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Host.AddSerilogConfiguration();
+
+builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddJwtConfiguration(builder.Configuration);
+builder.Services.AddApplicationServices();
+builder.Services.AddApiInfrastructure();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-    await scope.ServiceProvider.GetRequiredService<AuthDbContext>().Database.MigrateAsync();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.MapControllers();
+await app.InitializeDatabaseAsync();
+app.UseApiPipeline();
 
 app.Run();

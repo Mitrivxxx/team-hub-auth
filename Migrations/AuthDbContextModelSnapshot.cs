@@ -68,6 +68,12 @@ namespace team_hub_auth.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("RefreshTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RefreshTokenHash")
+                        .HasColumnType("text");
+
                     b.Property<int>("RoleId")
                         .HasColumnType("integer");
 
@@ -82,6 +88,9 @@ namespace team_hub_auth.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("RoleId");
+
+                    b.HasIndex("RefreshTokenHash")
+                        .IsUnique();
 
                     b.HasIndex("Username")
                         .IsUnique();
