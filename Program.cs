@@ -8,6 +8,7 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddJwtConfiguration(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddApiInfrastructure();
+builder.Services.AddValidation();
 
 var app = builder.Build();
 

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using team_hub_auth.Data;
 
 namespace team_hub_auth.Configuration;
