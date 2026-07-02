@@ -4,3 +4,5 @@ obj/
 .vs/
 *.user
 *.md
+team-hub-auth.Tests/
+team-hub-auth.sln
