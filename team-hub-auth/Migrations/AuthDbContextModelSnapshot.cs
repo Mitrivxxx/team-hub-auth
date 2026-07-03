@@ -74,7 +74,7 @@ namespace team_hub_auth.Migrations
                     b.Property<string>("RefreshTokenHash")
                         .HasColumnType("text");
 
-                    b.Property<int>("RoleId")
+                    b.Property<int?>("RoleId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Surname")
@@ -103,8 +103,7 @@ namespace team_hub_auth.Migrations
                     b.HasOne("team_hub_auth.Models.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Role");
                 });

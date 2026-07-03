@@ -24,7 +24,7 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
             e.ToTable("users");
             e.HasIndex(u => u.Username).IsUnique();
             e.HasIndex(u => u.RefreshTokenHash).IsUnique();
-            e.HasOne(u => u.Role).WithMany(r => r.Users).HasForeignKey(u => u.RoleId);
+            e.HasOne(u => u.Role).WithMany(r => r.Users).HasForeignKey(u => u.RoleId).IsRequired(false);
         });
     }
 }

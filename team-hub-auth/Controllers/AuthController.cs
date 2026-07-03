@@ -25,30 +25,21 @@ public class AuthController(AuthDbContext db, TokenService tokenService, ILogger
             return Conflict("Username already exists.");
         }
 
-        var roleName = req.Role ?? "user";
-        var role = await db.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
-        if (role is null)
-        {
-            logger.LogWarning("Registration failed: role {Role} not found for username {Username}", roleName, req.Username);
-            return BadRequest($"Role '{roleName}' not found.");
-        }
-
         var user = new User
         {
             Id = Uuid7.NewGuid(),
             Username = req.Username,
             Name = req.Name,
             Surname = req.Surname,
-            Password = PasswordHasher.Hash(req.Password),
-            RoleId = role.Id
+            Password = PasswordHasher.Hash(req.Password)
         };
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        logger.LogInformation("User {UserId} registered successfully with username {Username} and role {Role}", user.Id, user.Username, role.Name);
+        logger.LogInformation("User {UserId} registered successfully with username {Username}", user.Id, user.Username);
 
-        return Created($"/api/users/{user.Id}", ToResponse(user, role.Name));
+        return Created($"/api/users/{user.Id}", ToResponse(user, null));
     }
 
     [HttpPost("login")]
@@ -65,7 +56,8 @@ public class AuthController(AuthDbContext db, TokenService tokenService, ILogger
             return Unauthorized();
         }
 
-        var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user, user.Role.Name);
+        var roleName = user.Role?.Name;
+        var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user, roleName);
         var (refreshToken, refreshTokenHash, refreshTokenExpiresAt) = tokenService.GenerateRefreshToken();
 
         user.RefreshTokenHash = refreshTokenHash;
@@ -76,7 +68,7 @@ public class AuthController(AuthDbContext db, TokenService tokenService, ILogger
 
         logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
-        return Ok(ToAuthResponse(user, user.Role.Name, accessToken, accessTokenExpiresAt));
+        return Ok(ToAuthResponse(user, roleName, accessToken, accessTokenExpiresAt));
     }
 
     [HttpPost("refresh")]
@@ -104,7 +96,8 @@ public class AuthController(AuthDbContext db, TokenService tokenService, ILogger
             return Unauthorized();
         }
 
-        var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user, user.Role.Name);
+        var roleName = user.Role?.Name;
+        var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user, roleName);
         var (newRefreshToken, newRefreshTokenHash, newRefreshTokenExpiresAt) = tokenService.GenerateRefreshToken();
 
         user.RefreshTokenHash = newRefreshTokenHash;
@@ -113,7 +106,7 @@ public class AuthController(AuthDbContext db, TokenService tokenService, ILogger
 
         SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt);
 
-        return Ok(ToAuthResponse(user, user.Role.Name, accessToken, accessTokenExpiresAt));
+        return Ok(ToAuthResponse(user, roleName, accessToken, accessTokenExpiresAt));
     }
 
     [HttpPost("logout")]
@@ -136,7 +129,7 @@ public class AuthController(AuthDbContext db, TokenService tokenService, ILogger
         return NoContent();
     }
 
-    static UserResponse ToResponse(User user, string role) => new()
+    static UserResponse ToResponse(User user, string? role) => new()
     {
         Id = user.Id,
         Username = user.Username,
@@ -145,7 +138,7 @@ public class AuthController(AuthDbContext db, TokenService tokenService, ILogger
         Role = role
     };
 
-    static AuthResponse ToAuthResponse(User user, string role, string accessToken, DateTimeOffset accessTokenExpiresAt) => new()
+    static AuthResponse ToAuthResponse(User user, string? role, string accessToken, DateTimeOffset accessTokenExpiresAt) => new()
     {
         AccessToken = accessToken,
         ExpiresInSeconds = (int)Math.Max(0, (accessTokenExpiresAt - DateTimeOffset.UtcNow).TotalSeconds),

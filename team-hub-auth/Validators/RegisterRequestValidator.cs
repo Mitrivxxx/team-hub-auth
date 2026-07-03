@@ -5,8 +5,6 @@ namespace team_hub_auth.Validators;
 
 public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
 {
-    static readonly string[] AllowedRoles = ["admin", "user"];
-
     public RegisterRequestValidator()
     {
         RuleFor(x => x.Username)
@@ -28,9 +26,5 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
             .NotEmpty()
             .MinimumLength(8)
             .MaximumLength(128);
-
-        RuleFor(x => x.Role)
-            .Must(role => role is null || AllowedRoles.Contains(role))
-            .WithMessage($"Role must be one of: {string.Join(", ", AllowedRoles)}.");
     }
 }

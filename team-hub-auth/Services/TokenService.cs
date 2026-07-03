@@ -15,18 +15,19 @@ public class TokenService(IOptions<JwtOptions> jwtOptionsAccessor)
 
     readonly JwtOptions jwtOptions = jwtOptionsAccessor.Value;
 
-    public (string token, DateTimeOffset expiresAt) GenerateAccessToken(User user, string role)
+    public (string token, DateTimeOffset expiresAt) GenerateAccessToken(User user, string? role)
     {
         var now = DateTimeOffset.UtcNow;
         var expiresAt = now.AddMinutes(jwtOptions.ExpireMinutes);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Role, role)
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.UniqueName, user.Username),
+            new(ClaimTypes.Name, user.Username)
         };
+        if (role is not null)
+            claims.Add(new Claim(ClaimTypes.Role, role));
 
         var credentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
