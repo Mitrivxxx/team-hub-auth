@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using team_hub_auth.Data;
-using team_hub_auth.Services;
+using team_hub_auth.Services.Password;
+using team_hub_auth.Services.Tokens;
 using team_hub_auth.Validators;
 
 namespace team_hub_auth.Configuration;
@@ -69,7 +70,8 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddScoped<TokenService>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<ITokenService, TokenService>();
         return services;
     }
 }

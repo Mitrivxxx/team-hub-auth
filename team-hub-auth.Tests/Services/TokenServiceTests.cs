@@ -3,7 +3,7 @@ using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using team_hub_auth.Configuration;
 using team_hub_auth.Models;
-using team_hub_auth.Services;
+using team_hub_auth.Services.Tokens;
 
 namespace team_hub_auth.Tests.Services;
 

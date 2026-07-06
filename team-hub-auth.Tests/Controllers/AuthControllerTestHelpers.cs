@@ -9,12 +9,15 @@ using team_hub_auth.Configuration;
 using team_hub_auth.Controllers;
 using team_hub_auth.Data;
 using team_hub_auth.Models;
-using team_hub_auth.Services;
+using team_hub_auth.Services.Password;
+using team_hub_auth.Services.Tokens;
 
 namespace team_hub_auth.Tests.Controllers;
 
 internal static class AuthControllerTestHelpers
 {
+    public static readonly IPasswordHasher PasswordHasher = new PasswordHasher();
+
     public static AuthDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<AuthDbContext>()
@@ -41,9 +44,11 @@ internal static class AuthControllerTestHelpers
     public static AuthController CreateController(
         AuthDbContext db,
         string? requestCookie = null,
-        TokenService? tokenService = null)
+        ITokenService? tokenService = null,
+        IPasswordHasher? passwordHasher = null)
     {
         tokenService ??= CreateTokenService(expireMinutes: 15);
+        passwordHasher ??= PasswordHasher;
 
         var services = new ServiceCollection();
         services.AddSingleton<IHostEnvironment>(new TestHostEnvironment { EnvironmentName = Environments.Development });
@@ -57,7 +62,7 @@ internal static class AuthControllerTestHelpers
         if (!string.IsNullOrWhiteSpace(requestCookie))
             httpContext.Request.Headers.Cookie = requestCookie;
 
-        return new AuthController(db, tokenService, NullLogger<AuthController>.Instance)
+        return new AuthController(db, tokenService, passwordHasher, NullLogger<AuthController>.Instance)
         {
             ControllerContext = new ControllerContext
             {

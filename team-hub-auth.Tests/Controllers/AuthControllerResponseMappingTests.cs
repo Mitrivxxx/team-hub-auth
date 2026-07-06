@@ -2,7 +2,6 @@ using System.Reflection;
 using team_hub_auth.Controllers;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
-using team_hub_auth.Services;
 
 namespace team_hub_auth.Tests.Controllers;
 
@@ -17,7 +16,7 @@ public class AuthControllerResponseMappingTests
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = PasswordHasher.Hash("secret123")
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
         };
 
         var toAuthResponseMethod = typeof(AuthController).GetMethod(

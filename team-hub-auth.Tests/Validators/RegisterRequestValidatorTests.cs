@@ -15,8 +15,7 @@ public class RegisterRequestValidatorTests
             Username = "john_doe_1",
             Name = "John",
             Surname = "Doe",
-            Password = "secret123",
-            Role = "user"
+            Password = "secret123"
         };
 
         var result = validator.Validate(request);
@@ -75,42 +74,17 @@ public class RegisterRequestValidatorTests
             e.PropertyName is nameof(RegisterRequest.Name) or nameof(RegisterRequest.Surname));
     }
 
-    [Theory]
-    [InlineData("guest")]
-    [InlineData("ADMIN")]
-    public void Validate_WhenRoleIsNotAllowed_ShouldFail(string role)
-    {
-        var request = ValidRequest() with { Role = role };
-
-        var result = validator.Validate(request);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName == nameof(RegisterRequest.Role));
-    }
-
-    [Fact]
-    public void Validate_WhenRoleIsNull_ShouldPass()
-    {
-        var request = ValidRequest() with { Role = null };
-
-        var result = validator.Validate(request);
-
-        Assert.True(result.IsValid);
-    }
-
     static RegisterRequestRecord ValidRequest() => new(
         Username: "john_doe",
         Name: "John",
         Surname: "Doe",
-        Password: "secret123",
-        Role: "user");
+        Password: "secret123");
 
     readonly record struct RegisterRequestRecord(
         string Username,
         string Name,
         string Surname,
-        string Password,
-        string? Role)
+        string Password)
     {
         public static implicit operator RegisterRequest(RegisterRequestRecord record) =>
             new()
@@ -118,8 +92,7 @@ public class RegisterRequestValidatorTests
                 Username = record.Username,
                 Name = record.Name,
                 Surname = record.Surname,
-                Password = record.Password,
-                Role = record.Role
+                Password = record.Password
             };
     }
 }

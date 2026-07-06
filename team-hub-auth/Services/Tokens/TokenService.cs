@@ -7,9 +7,9 @@ using Microsoft.IdentityModel.Tokens;
 using team_hub_auth.Configuration;
 using team_hub_auth.Models;
 
-namespace team_hub_auth.Services;
+namespace team_hub_auth.Services.Tokens;
 
-public class TokenService(IOptions<JwtOptions> jwtOptionsAccessor)
+public class TokenService(IOptions<JwtOptions> jwtOptionsAccessor) : ITokenService
 {
     public const int RefreshTokenDays = 7;
 

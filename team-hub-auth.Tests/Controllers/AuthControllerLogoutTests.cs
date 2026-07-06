@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using team_hub_auth.Models;
-using team_hub_auth.Services;
 
 namespace team_hub_auth.Tests.Controllers;
 
@@ -19,7 +18,7 @@ public class AuthControllerLogoutTests
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = PasswordHasher.Hash("secret123"),
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
             RoleId = role.Id,
             RefreshTokenHash = "HASH_VALUE",
             RefreshTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(1)
@@ -53,7 +52,7 @@ public class AuthControllerLogoutTests
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = PasswordHasher.Hash("secret123"),
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
             RoleId = role.Id,
             RefreshTokenHash = refreshTokenHash,
             RefreshTokenExpiresAt = refreshTokenExpiresAt

@@ -1,4 +1,7 @@
+using DotNetEnv;
 using team_hub_auth.Configuration;
+
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +15,6 @@ builder.Services.AddValidation();
 
 var app = builder.Build();
 
-await app.InitializeDatabaseAsync();
 app.UseApiPipeline();
 
 app.Run();

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
-using team_hub_auth.Services;
 
 namespace team_hub_auth.Tests.Controllers;
 
@@ -34,7 +33,7 @@ public class AuthControllerLoginTests
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = PasswordHasher.Hash("secret123"),
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
             RoleId = role.Id
         });
         await db.SaveChangesAsync();
@@ -61,7 +60,7 @@ public class AuthControllerLoginTests
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = PasswordHasher.Hash("secret123"),
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
             RoleId = role.Id
         };
         db.Users.Add(user);
