@@ -1,0 +1,18 @@
+## Purpose
+- Krotki kontekst dla agenta auth.
+
+## Source of truth
+- `team-hub-auth/Program.cs`
+- `team-hub-auth/Controllers/AuthController*.cs`
+- `team-hub-auth/Configuration/*`
+- `team-hub-auth/Data/AuthDbContext.cs`
+- `team-hub-auth/.env.example`
+
+## Do
+- Trzymaj endpointy: `register`, `login`, `refresh`, `logout`.
+- Trzymaj cookie refresh token i flow JWT spojne z kontrolerami.
+- W dev trzymaj profile na `http://localhost:5001` i `https://localhost:5002`.
+- Aktualizuj ten plik po zmianie API, tokenow, walidacji, DB.
+
+## Don't
+- Nie zmieniaj kontraktu API bez aktualizacji docs i testow.

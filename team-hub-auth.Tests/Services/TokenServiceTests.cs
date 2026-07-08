@@ -1,9 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.Extensions.Options;
-using team_hub_auth.Configuration;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Tokens;
+using team_hub_auth.Tests.Configuration;
 
 namespace team_hub_auth.Tests.Services;
 
@@ -13,13 +12,7 @@ public class TokenServiceTests
 
     public TokenServiceTests()
     {
-        var jwtOptions = Options.Create(new JwtOptions
-        {
-            Key = "super-secret-test-key-that-is-long-enough",
-            Issuer = "TeamHubTests",
-            Audience = "TeamHubTestsAudience",
-            ExpireMinutes = 15
-        });
+        var jwtOptions = TestJwtConfiguration.CreateJwtOptions();
 
         service = new TokenService(jwtOptions);
     }

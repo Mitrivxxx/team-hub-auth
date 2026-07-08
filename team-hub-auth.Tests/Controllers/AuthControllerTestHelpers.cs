@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using team_hub_auth.Configuration;
+using team_hub_auth.Tests.Configuration;
 using team_hub_auth.Controllers;
 using team_hub_auth.Data;
 using team_hub_auth.Models;
@@ -73,14 +74,7 @@ internal static class AuthControllerTestHelpers
 
     public static TokenService CreateTokenService(int expireMinutes)
     {
-        var options = Options.Create(new JwtOptions
-        {
-            Key = "super-secret-test-key-that-is-long-enough",
-            Issuer = "TeamHubTests",
-            Audience = "TeamHubTestsAudience",
-            ExpireMinutes = expireMinutes
-        });
-
+        var options = TestJwtConfiguration.CreateJwtOptions(expireMinutes);
         return new TokenService(options);
     }
 
