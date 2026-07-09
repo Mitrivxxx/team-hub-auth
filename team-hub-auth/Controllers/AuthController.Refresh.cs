@@ -5,6 +5,7 @@ namespace team_hub_auth.Controllers;
 
 public partial class AuthController
 {
+    /// <summary>Refresh access token using cookie.</summary>
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh()
     {

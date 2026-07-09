@@ -7,6 +7,8 @@ public class User
     public string Name { get; set; } = "";
     public string Surname { get; set; } = "";
     public string Password { get; set; } = "";
+    public int FailedLoginAttempts { get; set; }
+    public DateTimeOffset? LockoutUntil { get; set; }
     public string? RefreshTokenHash { get; set; }
     public DateTimeOffset? RefreshTokenExpiresAt { get; set; }
     public int? RoleId { get; set; }

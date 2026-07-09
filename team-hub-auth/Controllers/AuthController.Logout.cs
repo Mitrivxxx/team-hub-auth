@@ -5,6 +5,7 @@ namespace team_hub_auth.Controllers;
 
 public partial class AuthController
 {
+    /// <summary>Sign out and revoke refresh token.</summary>
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {

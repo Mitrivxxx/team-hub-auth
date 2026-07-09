@@ -11,6 +11,7 @@
 ## Do
 - Trzymaj endpointy: `register`, `login`, `refresh`, `logout`.
 - Trzymaj cookie refresh token i flow JWT spojne z kontrolerami.
+- Trzymaj lockout logowania per konto: po 5 blednych probach konto blokowane na 15 minut.
 - W dev trzymaj profile na `http://localhost:5001` i `https://localhost:5002`.
 - Aktualizuj ten plik po zmianie API, tokenow, walidacji, DB.
 

@@ -8,6 +8,7 @@ namespace team_hub_auth.Controllers;
 
 public partial class AuthController
 {
+    /// <summary>Register a new user account.</summary>
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req)
     {
