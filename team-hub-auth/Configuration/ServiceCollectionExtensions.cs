@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddAuthorization();
         services.AddControllers();
+        services.AddHealthChecks();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
         return services;
