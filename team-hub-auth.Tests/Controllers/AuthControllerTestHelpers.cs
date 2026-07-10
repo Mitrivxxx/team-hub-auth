@@ -11,6 +11,7 @@ using team_hub_auth.Controllers;
 using team_hub_auth.Data;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Password;
+using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
 
 namespace team_hub_auth.Tests.Controllers;
@@ -46,9 +47,11 @@ internal static class AuthControllerTestHelpers
         AuthDbContext db,
         string? requestCookie = null,
         ITokenService? tokenService = null,
+        ISessionStore? sessionStore = null,
         IPasswordHasher? passwordHasher = null)
     {
         tokenService ??= CreateTokenService(expireMinutes: 15);
+        sessionStore ??= new InMemorySessionStore();
         passwordHasher ??= PasswordHasher;
 
         var services = new ServiceCollection();
@@ -63,7 +66,7 @@ internal static class AuthControllerTestHelpers
         if (!string.IsNullOrWhiteSpace(requestCookie))
             httpContext.Request.Headers.Cookie = requestCookie;
 
-        return new AuthController(db, tokenService, passwordHasher, NullLogger<AuthController>.Instance)
+        return new AuthController(db, tokenService, sessionStore, passwordHasher, NullLogger<AuthController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -76,6 +79,23 @@ internal static class AuthControllerTestHelpers
     {
         var options = TestJwtConfiguration.CreateJwtOptions(expireMinutes);
         return new TokenService(options);
+    }
+
+    public static string? GetSetCookieValue(IHeaderDictionary headers, string cookieName)
+    {
+        var marker = $"{cookieName}=";
+        foreach (var header in headers.SetCookie)
+        {
+            if (header is null || !header.StartsWith(marker, StringComparison.Ordinal))
+                continue;
+
+            var valueStart = marker.Length;
+            var valueEnd = header.IndexOf(';', valueStart);
+            var rawValue = valueEnd < 0 ? header[valueStart..] : header[valueStart..valueEnd];
+            return Uri.UnescapeDataString(rawValue);
+        }
+
+        return null;
     }
 
     private sealed class TestHostEnvironment : IHostEnvironment

@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.AddSerilogConfiguration();
 
 builder.Services.AddDatabase(builder.Configuration);
+builder.Services.AddRedisSessionStore(builder.Configuration);
 builder.Services.AddJwtConfiguration(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddApiInfrastructure();

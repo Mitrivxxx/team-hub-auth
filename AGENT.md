@@ -13,6 +13,7 @@
 - Keep endpoints: `register`, `login`, `refresh`, `logout`.
 - Keep health endpoint: `GET /health`.
 - Keep refresh-token cookie and JWT flow aligned with controllers.
+- Store refresh sessions in Redis (`Redis:ConnectionString`, key prefix `auth:session:`).
 - Keep login `rememberMe` behavior aligned across `login` and `refresh` (persistent vs session cookie).
 - Keep login lockout: 5 failed attempts, 15-minute lockout.
 - Keep register validation strict:
@@ -21,7 +22,9 @@
   - `username`: trim, `^[a-zA-Z0-9._-]{3,30}$`, unique case-insensitive.
   - `password`: length 12-128.
 - In dev, keep profiles on `http://localhost:5001` and `https://localhost:5002`.
-- In docker (Production), map auth to host `5001` (`team-hub-auth-prod`, `appsettings.Production.json`).
+- In dev, connect to postgres via `appsettings.Development.json` (`localhost:5433`, database `auth`, container `team-hub-dev` from `docker-compose.dev.yml`).
+- In dev, connect to Redis via `appsettings.Development.json` (`localhost:6379`, container `team-hub-redis-dev` from `docker-compose.dev.yml`).
+- In docker (Production), map auth to host `5001` (`team-hub-auth-prod`, `appsettings.Production.json`, database `authdb` on container `team-hub`, Redis on `redis:6379`).
 - Update this file after API, token, validation, or DB changes.
 
 ## Don't

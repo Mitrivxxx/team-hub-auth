@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using team_hub_auth.Data;
 using team_hub_auth.Services.Password;
+using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
 
 namespace team_hub_auth.Controllers;
@@ -10,6 +11,7 @@ namespace team_hub_auth.Controllers;
 public partial class AuthController(
     AuthDbContext db,
     ITokenService tokenService,
+    ISessionStore sessionStore,
     IPasswordHasher passwordHasher,
     ILogger<AuthController> logger) : ControllerBase
 {

@@ -20,17 +20,22 @@ public partial class AuthController
         }
 
         var refreshTokenHash = tokenService.HashRefreshToken(refreshToken);
-        var now = DateTimeOffset.UtcNow;
+        var session = await sessionStore.GetRefreshSessionAsync(refreshTokenHash);
+        if (session is null)
+        {
+            DeleteRefreshTokenCookie();
+            return Unauthorized();
+        }
+
+        rememberMe = session.RememberMe;
 
         var user = await db.Users
             .Include(u => u.Role)
-            .FirstOrDefaultAsync(u =>
-                u.RefreshTokenHash == refreshTokenHash &&
-                u.RefreshTokenExpiresAt != null &&
-                u.RefreshTokenExpiresAt > now);
+            .FirstOrDefaultAsync(u => u.Id == session.UserId);
 
         if (user is null)
         {
+            await sessionStore.RevokeRefreshSessionAsync(refreshTokenHash);
             DeleteRefreshTokenCookie();
             return Unauthorized();
         }
@@ -39,9 +44,12 @@ public partial class AuthController
         var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user, roleName);
         var (newRefreshToken, newRefreshTokenHash, newRefreshTokenExpiresAt) = tokenService.GenerateRefreshToken();
 
-        user.RefreshTokenHash = newRefreshTokenHash;
-        user.RefreshTokenExpiresAt = newRefreshTokenExpiresAt;
-        await db.SaveChangesAsync();
+        await sessionStore.RevokeRefreshSessionAsync(refreshTokenHash);
+        await sessionStore.StoreRefreshSessionAsync(
+            newRefreshTokenHash,
+            user.Id,
+            rememberMe,
+            newRefreshTokenExpiresAt);
 
         SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt, rememberMe);
 

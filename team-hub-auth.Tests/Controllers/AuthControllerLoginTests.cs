@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
+using team_hub_auth.Services.Sessions;
 
 namespace team_hub_auth.Tests.Controllers;
 
@@ -53,6 +53,7 @@ public class AuthControllerLoginTests
     public async Task Login_WhenCredentialsAreValidAndRememberMeDisabled_ShouldReturnOkWithSessionCookie()
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
+        var sessionStore = new InMemorySessionStore();
         var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
         var user = new User
         {
@@ -66,7 +67,8 @@ public class AuthControllerLoginTests
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        var controller = AuthControllerTestHelpers.CreateController(db);
+        var tokenService = AuthControllerTestHelpers.CreateTokenService(expireMinutes: 15);
+        var controller = AuthControllerTestHelpers.CreateController(db, sessionStore: sessionStore, tokenService: tokenService);
 
         var result = await controller.Login(new LoginRequest
         {
@@ -78,14 +80,18 @@ public class AuthControllerLoginTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<AuthResponse>(ok.Value);
         var setCookieHeader = controller.Response.Headers.SetCookie.ToString();
-        var updatedUser = await db.Users.SingleAsync(u => u.Id == user.Id);
+        var refreshToken = AuthControllerTestHelpers.GetSetCookieValue(controller.Response.Headers, "refreshToken");
+        Assert.False(string.IsNullOrWhiteSpace(refreshToken));
+        var refreshTokenHash = tokenService.HashRefreshToken(refreshToken!);
+        var session = await sessionStore.GetRefreshSessionAsync(refreshTokenHash);
 
         Assert.False(string.IsNullOrWhiteSpace(response.AccessToken));
         Assert.Contains("refreshToken=", setCookieHeader, StringComparison.Ordinal);
         Assert.Contains("refreshTokenPersistent=0", setCookieHeader, StringComparison.Ordinal);
         Assert.DoesNotContain("expires=", setCookieHeader, StringComparison.OrdinalIgnoreCase);
-        Assert.NotNull(updatedUser.RefreshTokenHash);
-        Assert.NotNull(updatedUser.RefreshTokenExpiresAt);
+        Assert.NotNull(session);
+        Assert.Equal(user.Id, session.UserId);
+        Assert.False(session.RememberMe);
     }
 
     [Fact]
