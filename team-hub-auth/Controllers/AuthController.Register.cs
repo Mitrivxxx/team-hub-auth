@@ -8,25 +8,41 @@ namespace team_hub_auth.Controllers;
 
 public partial class AuthController
 {
+    static (string Username, string Name, string Surname, string Password) NormalizeRegisterInput(RegisterRequest req) =>
+        ((req.Username ?? string.Empty).Trim(),
+         (req.Name ?? string.Empty).Trim(),
+         (req.Surname ?? string.Empty).Trim(),
+         req.Password ?? string.Empty);
+
     /// <summary>Register a new user account.</summary>
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req)
     {
-        logger.LogInformation("Registration attempt for username {Username}", req.Username);
+        var (username, name, surname, password) = NormalizeRegisterInput(req);
 
-        if (await db.Users.AnyAsync(u => u.Username == req.Username))
+        logger.LogInformation("Registration attempt for username {Username}", username);
+
+        var loweredUsername = username.ToLowerInvariant();
+        if (await db.Users.AnyAsync(u => u.Username.ToLower() == loweredUsername))
         {
-            logger.LogWarning("Registration failed: username {Username} already exists", req.Username);
-            return Conflict("Username already exists.");
+            logger.LogWarning("Registration failed: username {Username} already exists", username);
+            return Conflict(new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                ["username"] = ["Username is already taken."]
+            })
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Registration failed."
+            });
         }
 
         var user = new User
         {
             Id = Uuid7.NewGuid(),
-            Username = req.Username,
-            Name = req.Name,
-            Surname = req.Surname,
-            Password = passwordHasher.Hash(req.Password)
+            Username = username,
+            Name = name,
+            Surname = surname,
+            Password = passwordHasher.Hash(password)
         };
 
         db.Users.Add(user);

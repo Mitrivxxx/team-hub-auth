@@ -2,14 +2,24 @@ namespace team_hub_auth.Controllers;
 
 public partial class AuthController
 {
-    void SetRefreshTokenCookie(string token, DateTimeOffset expiresAt)
+    void SetRefreshTokenCookie(string refreshToken, DateTimeOffset expiresAt, bool rememberMe)
     {
-        Response.Cookies.Append(RefreshTokenCookieName, token, new CookieOptions
+        Response.Cookies.Append(RefreshTokenCookieName, refreshToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = !HttpContext.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment(),
-            SameSite = SameSiteMode.Strict,
-            Expires = expiresAt
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
+            Expires = rememberMe ? expiresAt : null
+        });
+
+        Response.Cookies.Append(RefreshTokenPersistentCookieName, rememberMe ? "1" : "0", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
+            Expires = rememberMe ? expiresAt : null
         });
     }
 
@@ -18,8 +28,16 @@ public partial class AuthController
         Response.Cookies.Delete(RefreshTokenCookieName, new CookieOptions
         {
             HttpOnly = true,
-            Secure = !HttpContext.RequestServices.GetRequiredService<IHostEnvironment>().IsDevelopment(),
-            SameSite = SameSiteMode.Strict
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Path = "/"
+        });
+        Response.Cookies.Delete(RefreshTokenPersistentCookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Path = "/"
         });
     }
 }

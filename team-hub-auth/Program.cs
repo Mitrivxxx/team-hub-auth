@@ -1,5 +1,7 @@
 using DotNetEnv;
+using Microsoft.EntityFrameworkCore;
 using team_hub_auth.Configuration;
+using team_hub_auth.Data;
 
 Env.TraversePath().Load();
 
@@ -14,6 +16,11 @@ builder.Services.AddApiInfrastructure();
 builder.Services.AddValidation();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<AuthDbContext>().Database.Migrate();
+}
 
 app.UseApiPipeline();
 

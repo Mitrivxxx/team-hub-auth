@@ -10,6 +10,10 @@ public partial class AuthController
     public async Task<IActionResult> Refresh()
     {
         var refreshToken = Request.Cookies[RefreshTokenCookieName];
+        var rememberMe = string.Equals(
+            Request.Cookies[RefreshTokenPersistentCookieName],
+            "1",
+            StringComparison.Ordinal);
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
             return Unauthorized();
@@ -39,7 +43,7 @@ public partial class AuthController
         user.RefreshTokenExpiresAt = newRefreshTokenExpiresAt;
         await db.SaveChangesAsync();
 
-        SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt);
+        SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt, rememberMe);
 
         return Ok(ToAuthResponse(user, roleName, accessToken, accessTokenExpiresAt));
     }

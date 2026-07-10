@@ -14,6 +14,7 @@ public partial class AuthController(
     ILogger<AuthController> logger) : ControllerBase
 {
     const string RefreshTokenCookieName = "refreshToken";
+    const string RefreshTokenPersistentCookieName = "refreshTokenPersistent";
     const int MaxFailedLoginAttempts = 5;
     static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 }
