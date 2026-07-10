@@ -11,11 +11,6 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
         RegexOptions.Compiled | RegexOptions.CultureInvariant,
         TimeSpan.FromMilliseconds(100));
 
-    static readonly Regex UsernameRegex = new(
-        @"^[a-zA-Z0-9._-]{3,30}$",
-        RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        TimeSpan.FromMilliseconds(100));
-
     public RegisterRequestValidator()
     {
         RuleFor(x => x.Name)
@@ -33,7 +28,7 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
         RuleFor(x => x.Username)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
-            .Must(username => IsValidUsername(username))
+            .Must(UsernameValidation.IsValid)
             .WithMessage("Username must be 3-30 chars and contain only letters, digits, dot, underscore, or hyphen.");
 
         RuleFor(x => x.Password)
@@ -51,9 +46,4 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
             && HumanNameRegex.IsMatch(normalized);
     }
 
-    static bool IsValidUsername(string? value)
-    {
-        var normalized = (value ?? string.Empty).Trim();
-        return UsernameRegex.IsMatch(normalized);
-    }
 }

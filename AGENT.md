@@ -26,6 +26,7 @@
 - In dev, connect to Redis via `appsettings.Development.json` (`localhost:6379`, container `team-hub-redis-dev` from `docker-compose.dev.yml`).
 - In docker (Production), map auth to host `5001` (`team-hub-auth-prod`, `appsettings.Production.json`, database `authdb` on container `team-hub`, Redis on `redis:6379`).
 - Update this file after API, token, validation, or DB changes.
+- Integration tests in `team-hub-auth.Tests/Integration` require Docker (Testcontainers Redis).
 
 ## Don't
 - Do not change the API contract without updating docs and tests.

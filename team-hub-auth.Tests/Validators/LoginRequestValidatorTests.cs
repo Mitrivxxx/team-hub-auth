@@ -39,11 +39,11 @@ public class LoginRequestValidatorTests
     }
 
     [Fact]
-    public void Validate_WhenUsernameIsLongerThan32_ShouldFail()
+    public void Validate_WhenUsernameIsLongerThan30_ShouldFail()
     {
         var request = new LoginRequest
         {
-            Username = new string('a', 33),
+            Username = new string('a', 31),
             Password = "secret123"
         };
 

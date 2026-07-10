@@ -15,7 +15,7 @@ public class RegisterRequestValidatorTests
             Username = "john_doe_1",
             Name = "John",
             Surname = "Doe",
-            Password = "secret123"
+            Password = "secret123456"
         };
 
         var result = validator.Validate(request);
@@ -39,7 +39,7 @@ public class RegisterRequestValidatorTests
     [Fact]
     public void Validate_WhenUsernameContainsForbiddenCharacters_ShouldFail()
     {
-        var request = ValidRequest() with { Username = "john-doe" };
+        var request = ValidRequest() with { Username = "john@doe" };
 
         var result = validator.Validate(request);
 
@@ -78,7 +78,7 @@ public class RegisterRequestValidatorTests
         Username: "john_doe",
         Name: "John",
         Surname: "Doe",
-        Password: "secret123");
+        Password: "secret123456");
 
     readonly record struct RegisterRequestRecord(
         string Username,
