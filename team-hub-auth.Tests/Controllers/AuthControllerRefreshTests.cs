@@ -68,7 +68,10 @@ public class AuthControllerRefreshTests
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        var controller = AuthControllerTestHelpers.CreateController(db, requestCookie: $"refreshToken={refreshToken}", tokenService);
+        var controller = AuthControllerTestHelpers.CreateController(
+            db,
+            requestCookie: $"refreshToken={refreshToken}; refreshTokenPersistent=1",
+            tokenService);
 
         var result = await controller.Refresh();
 
@@ -79,6 +82,8 @@ public class AuthControllerRefreshTests
 
         Assert.False(string.IsNullOrWhiteSpace(response.AccessToken));
         Assert.Contains("refreshToken=", setCookieHeader, StringComparison.Ordinal);
+        Assert.Contains("refreshTokenPersistent=1", setCookieHeader, StringComparison.Ordinal);
+        Assert.Contains("expires=", setCookieHeader, StringComparison.OrdinalIgnoreCase);
         Assert.NotNull(updatedUser.RefreshTokenHash);
         Assert.NotEqual(refreshTokenHash, updatedUser.RefreshTokenHash);
     }

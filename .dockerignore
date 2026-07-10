@@ -1,8 +1,6 @@
-bin/
-obj/
-.git/
-.vs/
-*.user
-*.md
-team-hub-auth.Tests/
-team-hub-auth.sln
+**/bin/
+**/obj/
+**/*.Tests/
+**/.vs/
+**/*.user
+**/*.log
