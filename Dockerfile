@@ -1,11 +1,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY team-hub-auth/team-hub-auth.csproj team-hub-auth/
-RUN dotnet restore team-hub-auth/team-hub-auth.csproj
+COPY building-blocks/TeamHub.Redis/TeamHub.Redis.csproj building-blocks/TeamHub.Redis/
+COPY services/team-hub-auth/team-hub-auth/team-hub-auth.csproj services/team-hub-auth/team-hub-auth/
+RUN dotnet restore services/team-hub-auth/team-hub-auth/team-hub-auth.csproj
 
-COPY team-hub-auth/ team-hub-auth/
-RUN dotnet publish team-hub-auth/team-hub-auth.csproj -c Release -o /app/publish
+COPY building-blocks/TeamHub.Redis/ building-blocks/TeamHub.Redis/
+COPY services/team-hub-auth/team-hub-auth/ services/team-hub-auth/team-hub-auth/
+RUN dotnet publish services/team-hub-auth/team-hub-auth/team-hub-auth.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 RUN apt-get update \
@@ -15,8 +17,14 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY --from=build /app/publish .
+RUN chown -R app:app /app
+
+USER app
 
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=5 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["dotnet", "team-hub-auth.dll"]

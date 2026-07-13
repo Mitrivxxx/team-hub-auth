@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
+using TeamHub.Redis;
 using team_hub_auth.Configuration;
 using team_hub_auth.Services.Sessions;
 using Xunit;

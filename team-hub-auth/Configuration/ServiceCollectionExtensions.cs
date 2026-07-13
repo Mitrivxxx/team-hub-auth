@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using team_hub_auth.Data;
-using StackExchange.Redis;
+using TeamHub.Redis;
 using team_hub_auth.Services.Password;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
@@ -80,17 +80,7 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddRedisSessionStore(this IServiceCollection services, IConfiguration configuration)
     {
-        services
-            .AddOptions<RedisOptions>()
-            .Bind(configuration.GetSection(RedisOptions.SectionName))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        services.AddSingleton<IConnectionMultiplexer>(sp =>
-        {
-            var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
-            return ConnectionMultiplexer.Connect(redisOptions.ConnectionString);
-        });
+        services.AddTeamHubRedis(configuration);
         services.AddSingleton<ISessionStore, RedisSessionStore>();
 
         return services;
