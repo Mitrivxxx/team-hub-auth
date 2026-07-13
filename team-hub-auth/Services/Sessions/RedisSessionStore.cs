@@ -1,5 +1,6 @@
 using System.Text.Json;
 using StackExchange.Redis;
+using team_hub_auth.Exceptions;
 
 namespace team_hub_auth.Services.Sessions;
 
@@ -23,19 +24,35 @@ public sealed class RedisSessionStore(IConnectionMultiplexer redis, ILogger<Redi
             return;
         }
 
-        var payload = JsonSerializer.Serialize(new RefreshSession(userId, rememberMe));
-        await Database.StringSetAsync(BuildKey(refreshTokenHash), payload, ttl);
+        try
+        {
+            var payload = JsonSerializer.Serialize(new RefreshSession(userId, rememberMe));
+            await Database.StringSetAsync(BuildKey(refreshTokenHash), payload, ttl);
+        }
+        catch (RedisException ex)
+        {
+            logger.LogError(ex, "Redis session store unavailable");
+            throw new RedisUnavailableException("Redis session store is unavailable.", ex);
+        }
     }
 
     public async Task<RefreshSession?> GetRefreshSessionAsync(
         string refreshTokenHash,
         CancellationToken cancellationToken = default)
     {
-        var value = await Database.StringGetAsync(BuildKey(refreshTokenHash));
-        if (value.IsNullOrEmpty)
-            return null;
+        try
+        {
+            var value = await Database.StringGetAsync(BuildKey(refreshTokenHash));
+            if (value.IsNullOrEmpty)
+                return null;
 
-        return JsonSerializer.Deserialize<RefreshSession>((string)value!);
+            return JsonSerializer.Deserialize<RefreshSession>((string)value!);
+        }
+        catch (RedisException ex)
+        {
+            logger.LogError(ex, "Redis session store unavailable");
+            throw new RedisUnavailableException("Redis session store is unavailable.", ex);
+        }
     }
 
     public Task RevokeRefreshSessionAsync(

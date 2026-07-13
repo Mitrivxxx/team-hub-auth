@@ -20,7 +20,6 @@ public static class ServiceCollectionExtensions
     {
         services.AddAuthorization();
         services.AddControllers();
-        services.AddHealthChecks();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
         return services;
@@ -82,6 +81,18 @@ public static class ServiceCollectionExtensions
     {
         services.AddTeamHubRedis(configuration);
         services.AddSingleton<ISessionStore, RedisSessionStore>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddAuthHealthChecks(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+
+        services.AddHealthChecks()
+            .AddNpgSql(connectionString, name: "postgres")
+            .AddCheck<RedisHealthCheck>("redis");
 
         return services;
     }

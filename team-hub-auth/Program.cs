@@ -11,6 +11,7 @@ builder.Host.AddSerilogConfiguration();
 
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddRedisSessionStore(builder.Configuration);
+builder.Services.AddAuthHealthChecks(builder.Configuration);
 builder.Services.AddJwtConfiguration(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddApiInfrastructure();
@@ -26,3 +27,5 @@ using (var scope = app.Services.CreateScope())
 app.UseApiPipeline();
 
 app.Run();
+
+public partial class Program;
