@@ -31,6 +31,11 @@ public static class WebApplicationExtensions
         });
 
         app.UseMiddleware<CorrelationIdMiddleware>();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.UseMiddleware<UserIdLoggingMiddleware>();
         app.UseSerilogRequestLoggingExcludingHealth();
 
         if (app.Environment.IsDevelopment())
@@ -39,8 +44,6 @@ public static class WebApplicationExtensions
             app.UseSwaggerUI();
         }
 
-        app.UseAuthentication();
-        app.UseAuthorization();
         app.MapHealthChecks("/health");
         app.MapControllers();
         return app;
