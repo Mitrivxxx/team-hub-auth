@@ -31,6 +31,7 @@ public static class WebApplicationExtensions
         });
 
         app.UseMiddleware<CorrelationIdMiddleware>();
+        app.UseMiddleware<SessionIdMiddleware>();
 
         app.UseAuthentication();
         app.UseAuthorization();

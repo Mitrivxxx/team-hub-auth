@@ -23,10 +23,11 @@
 - Prod Env (Docker): Host port 5001. Postgres (container `team-hub`, db `authdb`). Redis (`redis:6379`). Container `team-hub-auth-prod`. Connection string in auth `.env` (`ConnectionStrings__DefaultConnection`).
 - Integration tests: `team-hub-auth.Tests/Integration` (requires Docker; Testcontainers Redis and PostgreSQL).
 - Keep `CorrelationIdMiddleware` before authentication (header `X-Correlation-ID`; preserve incoming value from gateway).
+- Keep `SessionIdMiddleware` after `CorrelationIdMiddleware` (header `X-Session-ID`; fallback `Guid` when missing; echo in response).
 - Keep `UserIdLoggingMiddleware` after `UseAuthentication` / `UseAuthorization` (JWT `sub` or `NameIdentifier` → `LogContext.UserId`).
-- Keep `UseSerilogRequestLoggingExcludingHealth` after `UserIdLoggingMiddleware` so request logs include `CorrelationId` and `UserId`.
-- Dev log template: `[{Level:u3}] [{CorrelationId}] [{UserId}] {SourceContext} {Message:lj}` (no `{Timestamp}` — Loki adds its own).
-- Prod logs: Serilog compact JSON with structured fields `CorrelationId`, `UserId` (query in Grafana via `| json`).
+- Keep `UseSerilogRequestLoggingExcludingHealth` after `UserIdLoggingMiddleware` so request logs include `CorrelationId`, `SessionId`, and `UserId`.
+- Dev log template: `[{Level:u3}] [{CorrelationId}] [{SessionId}] [{UserId}] {SourceContext} {Message:lj}` (no `{Timestamp}` — Loki adds its own).
+- Prod logs: Serilog compact JSON with structured fields `CorrelationId`, `SessionId`, `UserId` (query in Grafana via `| json`).
 - Cookie-only endpoints (`login`, `register`, `refresh`, `logout`) have empty `UserId` unless `Authorization: Bearer` is sent.
 - Enrich all request logs with Serilog `CorrelationId` via `LogContext`.
 - Echo `X-Correlation-ID` on every response.
