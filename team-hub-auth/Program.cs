@@ -1,5 +1,6 @@
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
+using TeamHub.Observability;
 using team_hub_auth.Configuration;
 using team_hub_auth.Data;
 
@@ -7,8 +8,9 @@ Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.AddSerilogConfiguration();
+builder.Host.AddTeamHubSerilog();
 
+builder.Services.AddTeamHubOpenTelemetry(builder.Configuration, "team-hub-auth", includeEntityFrameworkCore: true);
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddRedisSessionStore(builder.Configuration);
 builder.Services.AddAuthHealthChecks(builder.Configuration);
@@ -25,6 +27,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseApiPipeline();
+app.MapTeamHubObservabilityEndpoints();
 
 app.Run();
 

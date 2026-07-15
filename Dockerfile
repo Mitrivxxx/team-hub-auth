@@ -2,10 +2,12 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY building-blocks/TeamHub.Redis/TeamHub.Redis.csproj building-blocks/TeamHub.Redis/
+COPY building-blocks/TeamHub.Observability/TeamHub.Observability.csproj building-blocks/TeamHub.Observability/
 COPY services/team-hub-auth/team-hub-auth/team-hub-auth.csproj services/team-hub-auth/team-hub-auth/
 RUN dotnet restore services/team-hub-auth/team-hub-auth/team-hub-auth.csproj
 
 COPY building-blocks/TeamHub.Redis/ building-blocks/TeamHub.Redis/
+COPY building-blocks/TeamHub.Observability/ building-blocks/TeamHub.Observability/
 COPY services/team-hub-auth/team-hub-auth/ services/team-hub-auth/team-hub-auth/
 RUN dotnet publish services/team-hub-auth/team-hub-auth/team-hub-auth.csproj -c Release -o /app/publish
 

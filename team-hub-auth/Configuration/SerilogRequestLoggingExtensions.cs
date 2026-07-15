@@ -13,6 +13,7 @@ public static class SerilogRequestLoggingExtensions
                 exception is not null
                     ? LogEventLevel.Error
                     : context.Request.Path.StartsWithSegments("/health")
+                        || context.Request.Path.StartsWithSegments("/metrics")
                         ? LogEventLevel.Verbose
                         : LogEventLevel.Information;
         });
