@@ -24,7 +24,7 @@ USER app
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=5 \
+HEALTHCHECK --interval=120s --timeout=5s --start-period=15s --retries=5 \
     CMD curl -f http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["dotnet", "team-hub-auth.dll"]

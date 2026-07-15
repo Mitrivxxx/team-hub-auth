@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using TeamHub.Redis;
 using team_hub_auth.Configuration;
 using team_hub_auth.Tests.Configuration;
 

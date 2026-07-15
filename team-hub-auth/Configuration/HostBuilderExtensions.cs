@@ -6,8 +6,12 @@ public static class HostBuilderExtensions
 {
     public static IHostBuilder AddSerilogConfiguration(this IHostBuilder hostBuilder)
     {
-        hostBuilder.UseSerilog((context, configuration) =>
-            configuration.ReadFrom.Configuration(context.Configuration));
+        hostBuilder.UseSerilog((context, services, configuration) =>
+            configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+                .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName));
         return hostBuilder;
     }
 }

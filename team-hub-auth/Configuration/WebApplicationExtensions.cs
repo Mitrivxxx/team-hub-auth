@@ -30,7 +30,8 @@ public static class WebApplicationExtensions
             });
         });
 
-        app.UseSerilogRequestLogging();
+        app.UseMiddleware<CorrelationIdMiddleware>();
+        app.UseSerilogRequestLoggingExcludingHealth();
 
         if (app.Environment.IsDevelopment())
         {
