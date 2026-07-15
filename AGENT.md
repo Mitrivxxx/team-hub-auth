@@ -11,7 +11,10 @@
 - Health: `GET /health` checks PostgreSQL and Redis (`200` healthy, `503` unhealthy).
 - Docker healthcheck interval: `120s` (`docker-compose.yml` + `Dockerfile`).
 - Exclude `/health` from Serilog request logging (`UseSerilogRequestLoggingExcludingHealth`).
-- Redis outage: `login` and `refresh` return `503` with JSON `error` when session store is unavailable.
+- Keep `ExceptionMiddleware` as the first middleware (global try/catch; Serilog `Error` with stack trace; RFC 7807 `ProblemDetails`).
+- Return `application/problem+json` with `correlationId` (and `sessionId` when present) in ProblemDetails extensions.
+- In Development only: include `stackTrace` and exception message in ProblemDetails; in Production/Staging use generic detail (no stack trace in HTTP response).
+- `RedisUnavailableException` → `503` ProblemDetails (authentication service temporarily unavailable).
 - Lockout: 5 failed attempts = 15-min lockout.
 - Validation:
   - `name`: 2-50 chars, Unicode letters, single space/’/-.

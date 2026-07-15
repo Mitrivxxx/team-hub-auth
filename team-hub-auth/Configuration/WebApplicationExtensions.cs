@@ -8,28 +8,7 @@ public static class WebApplicationExtensions
 {
     public static WebApplication UseApiPipeline(this WebApplication app)
     {
-        app.UseExceptionHandler(errorApp =>
-        {
-            errorApp.Run(async context =>
-            {
-                var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
-                if (exception is RedisUnavailableException)
-                {
-                    context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-                    context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsJsonAsync(new
-                    {
-                        error = "Authentication service temporarily unavailable. Please try again later."
-                    });
-                    return;
-                }
-
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                context.Response.ContentType = "application/json";
-                await context.Response.WriteAsJsonAsync(new { error = "Internal Server Error" });
-            });
-        });
-
+        app.UseMiddleware<ExceptionMiddleware>();
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseMiddleware<SessionIdMiddleware>();
 
