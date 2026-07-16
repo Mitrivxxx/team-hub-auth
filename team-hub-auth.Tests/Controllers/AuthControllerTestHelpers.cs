@@ -10,6 +10,7 @@ using team_hub_auth.Tests.Configuration;
 using team_hub_auth.Controllers;
 using team_hub_auth.Data;
 using team_hub_auth.Models;
+using team_hub_auth.Services.LoginAttempts;
 using team_hub_auth.Services.Password;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
@@ -48,11 +49,13 @@ internal static class AuthControllerTestHelpers
         string? requestCookie = null,
         ITokenService? tokenService = null,
         ISessionStore? sessionStore = null,
-        IPasswordHasher? passwordHasher = null)
+        IPasswordHasher? passwordHasher = null,
+        ILoginAttemptLimiter? loginAttemptLimiter = null)
     {
         tokenService ??= CreateTokenService(expireMinutes: 15);
         sessionStore ??= new InMemorySessionStore();
         passwordHasher ??= PasswordHasher;
+        loginAttemptLimiter ??= new InMemoryLoginAttemptLimiter();
 
         var services = new ServiceCollection();
         services.AddSingleton<IHostEnvironment>(new TestHostEnvironment { EnvironmentName = Environments.Development });
@@ -66,7 +69,7 @@ internal static class AuthControllerTestHelpers
         if (!string.IsNullOrWhiteSpace(requestCookie))
             httpContext.Request.Headers.Cookie = requestCookie;
 
-        return new AuthController(db, tokenService, sessionStore, passwordHasher, NullLogger<AuthController>.Instance)
+        return new AuthController(db, tokenService, sessionStore, passwordHasher, loginAttemptLimiter, NullLogger<AuthController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -105,5 +108,56 @@ internal static class AuthControllerTestHelpers
         public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
         public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
             new Microsoft.Extensions.FileProviders.PhysicalFileProvider(Directory.GetCurrentDirectory());
+    }
+
+    sealed class InMemoryLoginAttemptLimiter : ILoginAttemptLimiter
+    {
+        readonly Dictionary<string, int> attemptsByUsername = new(StringComparer.OrdinalIgnoreCase);
+        readonly Dictionary<string, DateTimeOffset> lockoutUntilByUsername = new(StringComparer.OrdinalIgnoreCase);
+
+        public Task<LoginLockoutStatus> GetLockoutStatusAsync(string username, CancellationToken cancellationToken = default)
+        {
+            if (lockoutUntilByUsername.TryGetValue(username, out var lockoutUntil) && lockoutUntil > DateTimeOffset.UtcNow)
+            {
+                var remainingSeconds = (int)Math.Ceiling((lockoutUntil - DateTimeOffset.UtcNow).TotalSeconds);
+                return Task.FromResult(new LoginLockoutStatus(IsLocked: true, LockoutSeconds: Math.Max(0, remainingSeconds)));
+            }
+
+            return Task.FromResult(new LoginLockoutStatus(IsLocked: false, LockoutSeconds: 0));
+        }
+
+        public Task<LoginFailureOutcome> RegisterFailedAttemptAsync(
+            string username,
+            int maxFailedAttempts,
+            TimeSpan lockoutDuration,
+            CancellationToken cancellationToken = default)
+        {
+            attemptsByUsername.TryGetValue(username, out var attempts);
+            attempts++;
+
+            if (attempts >= maxFailedAttempts)
+            {
+                lockoutUntilByUsername[username] = DateTimeOffset.UtcNow.Add(lockoutDuration);
+                attemptsByUsername[username] = 0;
+                return Task.FromResult(new LoginFailureOutcome(
+                    RemainingAttempts: 0,
+                    IsLocked: true,
+                    LockoutSeconds: (int)Math.Ceiling(lockoutDuration.TotalSeconds)));
+            }
+
+            attemptsByUsername[username] = attempts;
+            var remainingAttempts = Math.Max(0, maxFailedAttempts - attempts);
+            return Task.FromResult(new LoginFailureOutcome(
+                RemainingAttempts: remainingAttempts,
+                IsLocked: false,
+                LockoutSeconds: 0));
+        }
+
+        public Task ClearAttemptsAsync(string username, CancellationToken cancellationToken = default)
+        {
+            attemptsByUsername.Remove(username);
+            lockoutUntilByUsername.Remove(username);
+            return Task.CompletedTask;
+        }
     }
 }

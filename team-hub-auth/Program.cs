@@ -8,6 +8,7 @@ Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
 builder.Host.AddTeamHubSerilog();
 
 builder.Services.AddTeamHubOpenTelemetry(builder.Configuration, "team-hub-auth", includeEntityFrameworkCore: true);
@@ -28,6 +29,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseApiPipeline();
 app.MapTeamHubObservabilityEndpoints();
+app.MapDefaultEndpoints();
 
 app.Run();
 

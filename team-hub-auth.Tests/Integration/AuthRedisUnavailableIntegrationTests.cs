@@ -37,7 +37,7 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(
             "Authentication service temporarily unavailable. Please try again later.",
-            body.GetProperty("error").GetString());
+            body.GetProperty("detail").GetString());
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(
             "Authentication service temporarily unavailable. Please try again later.",
-            body.GetProperty("error").GetString());
+            body.GetProperty("detail").GetString());
     }
 
     static async Task SeedUserAsync(TestAuthWebApplicationFactory factory)

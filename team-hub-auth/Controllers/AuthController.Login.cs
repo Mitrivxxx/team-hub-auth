@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
@@ -14,46 +15,60 @@ public partial class AuthController
         var username = (req.Username ?? string.Empty).Trim();
         logger.LogInformation("Login attempt for username {Username}", username);
 
-        var now = DateTimeOffset.UtcNow;
         var loweredUsername = username.ToLower();
+
+        var lockoutStatus = await loginAttemptLimiter.GetLockoutStatusAsync(loweredUsername);
+        if (lockoutStatus.IsLocked)
+        {
+            logger.LogWarning("Login blocked for username {Username} due to active lockout", username);
+            return StatusCode(StatusCodes.Status423Locked, new AuthLoginErrorResponse
+            {
+                Code = "AUTH_LOCKED",
+                RemainingAttempts = 0,
+                LockoutSeconds = lockoutStatus.LockoutSeconds
+            });
+        }
+
         var user = await db.Users.Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Username.ToLower() == loweredUsername);
 
-        if (user?.LockoutUntil is { } lockoutUntil && lockoutUntil > now)
+        var passwordIsValid = user is not null && passwordHasher.Verify(req.Password, user.Password);
+        if (!passwordIsValid)
         {
-            logger.LogWarning("Login blocked for username {Username} due to active lockout", username);
-            return Unauthorized();
-        }
+            var failureOutcome = await loginAttemptLimiter.RegisterFailedAttemptAsync(
+                loweredUsername,
+                MaxFailedLoginAttempts,
+                LockoutDuration);
 
-        if (user is null || !passwordHasher.Verify(req.Password, user.Password))
-        {
-            if (user is not null)
+            logger.LogWarning("Login failed for username {Username} (remainingAttempts: {RemainingAttempts})", username, failureOutcome.RemainingAttempts);
+
+            if (failureOutcome.IsLocked)
             {
-                user.FailedLoginAttempts++;
-                if (user.FailedLoginAttempts >= MaxFailedLoginAttempts)
+                return StatusCode(StatusCodes.Status423Locked, new AuthLoginErrorResponse
                 {
-                    user.LockoutUntil = now.Add(LockoutDuration);
-                    user.FailedLoginAttempts = 0;
-                }
-
-                await db.SaveChangesAsync();
+                    Code = "AUTH_LOCKED",
+                    RemainingAttempts = 0,
+                    LockoutSeconds = failureOutcome.LockoutSeconds
+                });
             }
 
-            logger.LogWarning("Login failed for username {Username}", username);
-            return Unauthorized();
+            return Unauthorized(new AuthLoginErrorResponse
+            {
+                Code = "AUTH_INVALID_CREDENTIALS",
+                RemainingAttempts = failureOutcome.RemainingAttempts,
+                LockoutSeconds = null
+            });
         }
 
-        user.FailedLoginAttempts = 0;
-        user.LockoutUntil = null;
-        await db.SaveChangesAsync();
+        await loginAttemptLimiter.ClearAttemptsAsync(loweredUsername);
 
-        var roleName = user.Role?.Name;
+        var roleName = user!.Role?.Name;
         var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user, roleName);
         var (refreshToken, refreshTokenHash, refreshTokenExpiresAt) = tokenService.GenerateRefreshToken();
 
         await sessionStore.StoreRefreshSessionAsync(
             refreshTokenHash,
-            user.Id,
+            user!.Id,
             req.RememberMe,
             refreshTokenExpiresAt);
 
@@ -61,6 +76,6 @@ public partial class AuthController
 
         logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
-        return Ok(ToAuthResponse(user, roleName, accessToken, accessTokenExpiresAt));
+        return Ok(ToAuthResponse(user!, roleName, accessToken, accessTokenExpiresAt));
     }
 }

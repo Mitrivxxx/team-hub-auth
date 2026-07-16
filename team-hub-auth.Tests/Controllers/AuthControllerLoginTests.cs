@@ -19,7 +19,10 @@ public class AuthControllerLoginTests
             Password = "secret123"
         });
 
-        Assert.IsType<UnauthorizedResult>(result);
+        var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+        var response = Assert.IsType<AuthLoginErrorResponse>(unauthorized.Value);
+        Assert.Equal("AUTH_INVALID_CREDENTIALS", response.Code);
+        Assert.True(response.RemainingAttempts is not null);
     }
 
     [Fact]
@@ -46,7 +49,10 @@ public class AuthControllerLoginTests
             Password = "wrong-password"
         });
 
-        Assert.IsType<UnauthorizedResult>(result);
+        var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+        var response = Assert.IsType<AuthLoginErrorResponse>(unauthorized.Value);
+        Assert.Equal("AUTH_INVALID_CREDENTIALS", response.Code);
+        Assert.True(response.RemainingAttempts is not null);
     }
 
     [Fact]

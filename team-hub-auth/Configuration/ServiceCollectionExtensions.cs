@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using team_hub_auth.Data;
 using TeamHub.Redis;
 using team_hub_auth.Services.Password;
+using team_hub_auth.Services.LoginAttempts;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
 using team_hub_auth.Validators;
@@ -81,6 +82,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddTeamHubRedis(configuration);
         services.AddSingleton<ISessionStore, RedisSessionStore>();
+        services.AddSingleton<ILoginAttemptLimiter, RedisLoginAttemptLimiter>();
 
         return services;
     }

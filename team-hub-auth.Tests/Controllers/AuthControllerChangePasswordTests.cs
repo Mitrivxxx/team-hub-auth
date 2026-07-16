@@ -5,6 +5,7 @@ using team_hub_auth.Controllers;
 using team_hub_auth.Data;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
+using team_hub_auth.Services.LoginAttempts;
 using team_hub_auth.Services.Password;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
@@ -88,7 +89,53 @@ public class AuthControllerChangePasswordTests
             new TestTokenService(),
             new TestSessionStore(),
             passwordHasher,
+            new InMemoryLoginAttemptLimiter(),
             NullLogger<AuthController>.Instance);
+
+    sealed class InMemoryLoginAttemptLimiter : ILoginAttemptLimiter
+    {
+        readonly Dictionary<string, int> attemptsByUsername = new(StringComparer.OrdinalIgnoreCase);
+        readonly Dictionary<string, DateTimeOffset> lockoutUntilByUsername = new(StringComparer.OrdinalIgnoreCase);
+
+        public Task<LoginLockoutStatus> GetLockoutStatusAsync(string username, CancellationToken cancellationToken = default)
+        {
+            if (lockoutUntilByUsername.TryGetValue(username, out var lockoutUntil) && lockoutUntil > DateTimeOffset.UtcNow)
+            {
+                var remainingSeconds = (int)Math.Ceiling((lockoutUntil - DateTimeOffset.UtcNow).TotalSeconds);
+                return Task.FromResult(new LoginLockoutStatus(IsLocked: true, LockoutSeconds: Math.Max(0, remainingSeconds)));
+            }
+
+            return Task.FromResult(new LoginLockoutStatus(IsLocked: false, LockoutSeconds: 0));
+        }
+
+        public Task<LoginFailureOutcome> RegisterFailedAttemptAsync(
+            string username,
+            int maxFailedAttempts,
+            TimeSpan lockoutDuration,
+            CancellationToken cancellationToken = default)
+        {
+            attemptsByUsername.TryGetValue(username, out var attempts);
+            attempts++;
+
+            if (attempts >= maxFailedAttempts)
+            {
+                lockoutUntilByUsername[username] = DateTimeOffset.UtcNow.Add(lockoutDuration);
+                attemptsByUsername[username] = 0;
+                return Task.FromResult(new LoginFailureOutcome(RemainingAttempts: 0, IsLocked: true, LockoutSeconds: (int)Math.Ceiling(lockoutDuration.TotalSeconds)));
+            }
+
+            attemptsByUsername[username] = attempts;
+            var remainingAttempts = Math.Max(0, maxFailedAttempts - attempts);
+            return Task.FromResult(new LoginFailureOutcome(RemainingAttempts: remainingAttempts, IsLocked: false, LockoutSeconds: 0));
+        }
+
+        public Task ClearAttemptsAsync(string username, CancellationToken cancellationToken = default)
+        {
+            attemptsByUsername.Remove(username);
+            lockoutUntilByUsername.Remove(username);
+            return Task.CompletedTask;
+        }
+    }
 
     sealed class TestPasswordHasher : IPasswordHasher
     {

@@ -3,6 +3,7 @@
 
 ## Source of truth
 - `team-hub-auth/` (`Program.cs`, `Controllers/AuthController*`, `Configuration/`, `Data/AuthDbContext.cs`, `appsettings*.json`, `.env*`)
+- `aspire/TeamHub.ServiceDefaults/Extensions.cs`
 
 ## Do
 - Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET /health`.
@@ -16,14 +17,18 @@
 - Return `application/problem+json` with `correlationId` (and `sessionId` when present) in ProblemDetails extensions.
 - In Development only: include `stackTrace` and exception message in ProblemDetails; in Production/Staging use generic detail (no stack trace in HTTP response).
 - `RedisUnavailableException` → `503` ProblemDetails (authentication service temporarily unavailable).
-- Lockout: 5 failed attempts = 15-min lockout.
+- Lockout: Redis-based per-username limiter (keys `auth:login-attempts:` / `auth:login-lockout:`).
+  - 5 failed attempts = 15-min lockout.
+  - `POST /login`:
+    - invalid credentials: `401` with `{ code: "AUTH_INVALID_CREDENTIALS", remainingAttempts }`
+    - locked: `423` with `{ code: "AUTH_LOCKED", lockoutSeconds }`
 - Validation:
   - `name`: 2-50 chars, Unicode letters, single space/’/-.
   - `surname`: 2-80 chars, Unicode letters, single space/’/-.
   - `username`: 3-30 chars, `^[a-zA-Z0-9._-]{3,30}$` (case-insensitive).
   - `password`: 12-128 chars.
 - Cookies: `rememberMe` persistent vs session cookie behavior.
-- Dev Env: Ports 5001/5002. Postgres (`localhost:5433`, db `auth`). Redis (`localhost:6379`). Container `team-hub-dev`.
+- Dev Env: HTTP only on port `5001` (`launchSettings.json`). Postgres (`localhost:5433`, db `auth_db`). Redis (`localhost:6379`). Container `team-hub-dev`.
 - Prod Env (Docker): Host port 5001. Postgres (container `team-hub`, db `authdb`). Redis (`redis:6379`). Container `team-hub-auth-prod`. Connection string in auth `.env` (`ConnectionStrings__DefaultConnection`).
 - Integration tests: `team-hub-auth.Tests/Integration` (requires Docker; Testcontainers Redis and PostgreSQL).
 - Keep `CorrelationIdMiddleware` before authentication (`X-Correlation-ID` = OpenTelemetry `TraceId`; echo on response).

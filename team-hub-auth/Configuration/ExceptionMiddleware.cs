@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 using team_hub_auth.Exceptions;
 
 namespace team_hub_auth.Configuration;
@@ -35,8 +36,9 @@ public sealed class ExceptionMiddleware(
 
             var problem = BuildProblemDetails(context, ex, correlationId);
             context.Response.StatusCode = problem.Status ?? StatusCodes.Status500InternalServerError;
-            await context.Response.WriteAsJsonAsync(problem);
             context.Response.ContentType = "application/problem+json; charset=utf-8";
+            var json = JsonSerializer.Serialize(problem, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            await context.Response.WriteAsync(json);
         }
     }
 
@@ -62,11 +64,17 @@ public sealed class ExceptionMiddleware(
     {
         var (statusCode, title, detail) = MapException(exception);
 
+            var detailToReturn = exception is RedisUnavailableException
+                ? detail
+                : environment.IsDevelopment()
+                    ? exception.Message
+                    : detail;
+
         var problem = new ProblemDetails
         {
             Status = statusCode,
             Title = title,
-            Detail = environment.IsDevelopment() ? exception.Message : detail,
+                Detail = detailToReturn,
             Type = $"https://httpstatuses.com/{statusCode}",
             Instance = context.Request.Path
         };
