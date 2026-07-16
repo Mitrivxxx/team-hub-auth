@@ -5,7 +5,7 @@
 - `team-hub-auth/` (`Program.cs`, `Controllers/AuthController*`, `Configuration/`, `Data/AuthDbContext.cs`, `appsettings*.json`, `.env*`)
 
 ## Do
-- Endpoints: `register`, `login`, `refresh`, `logout`, `GET /health`.
+- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET /health`.
 - Flow: JWT + refresh-token cookie.
 - Session storage: Redis (`Redis:ConnectionString`, prefix `auth:session:`).
 - Health: `GET /health` checks PostgreSQL and Redis (`200` healthy, `503` unhealthy).
