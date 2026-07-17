@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - stage
+      - main
+  pull_request:
+    branches:
+      - stage
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: 8.0.x
+  TEAM_HUB_MONOREPO: https://github.com/Mitrivxxx/team-hub.git
+  TEAM_HUB_MONOREPO_REF: main
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout auth
+        uses: actions/checkout@v4
+
+      - name: Prepare monorepo layout
+        id: layout
+        run: |
+          chmod +x scripts/prepare-monorepo-layout.sh
+          layout_output="$(./scripts/prepare-monorepo-layout.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/team-hub-ci" "$TEAM_HUB_MONOREPO_REF")"
+          echo "$layout_output"
+          echo "root=${layout_output#MONOREPO_ROOT=}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+          cache-dependency-path: |
+            team-hub-auth/team-hub-auth.csproj
+            team-hub-auth.Tests/team-hub-auth.Tests.csproj
+
+      - name: Restore
+        working-directory: ${{ steps.layout.outputs.root }}/services/team-hub-auth
+        run: dotnet restore team-hub-auth.sln
+
+      - name: Build
+        working-directory: ${{ steps.layout.outputs.root }}/services/team-hub-auth
+        run: dotnet build team-hub-auth.sln --configuration Release --no-restore
+
+      - name: Test
+        working-directory: ${{ steps.layout.outputs.root }}/services/team-hub-auth
+        run: dotnet test team-hub-auth.sln --configuration Release --no-build --verbosity normal
+
+  publish:
+    name: Publish image
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout auth
+        uses: actions/checkout@v4
+
+      - name: Prepare monorepo layout
+        id: layout
+        run: |
+          chmod +x scripts/prepare-monorepo-layout.sh
+          layout_output="$(./scripts/prepare-monorepo-layout.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/team-hub-ci" "$TEAM_HUB_MONOREPO_REF")"
+          echo "$layout_output"
+          echo "root=${layout_output#MONOREPO_ROOT=}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=ref,event=branch
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.layout.outputs.root }}
+          file: ${{ steps.layout.outputs.root }}/services/team-hub-auth/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
