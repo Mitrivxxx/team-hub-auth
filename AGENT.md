@@ -44,10 +44,10 @@
 
 ## CI (GitHub Actions)
 - Workflow: `.github/workflows/ci.yml`.
-- Branches: `stage` (tests only), `main` (tests + GHCR image push).
+- Branches: `stage` (tests only), `main` (tests + GHCR image push). `dev` has no CI.
 - PRs targeting `stage` or `main` run tests before merge.
-- Shared deps (`building-blocks`, `TeamHub.ServiceDefaults`) are fetched from `Mitrivxxx/team-hub` via `scripts/prepare-monorepo-layout.sh` (pin: `TEAM_HUB_MONOREPO_REF=main`).
-- Image: `ghcr.io/<owner>/team-hub-auth` (`latest` + commit SHA on `main` push).
+- Shared deps: dual `actions/checkout` — monorepo `Mitrivxxx/team-hub@main` then overlay this repo at `services/team-hub-auth`.
+- Image: `ghcr.io/<owner>/team-hub-auth` (`latest` + short commit SHA on `main` push). Uses `GITHUB_TOKEN` (no extra secrets).
 - Integration tests use Testcontainers (Docker required on runner).
 
 ## Don't

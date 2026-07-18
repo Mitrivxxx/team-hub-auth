@@ -16,9 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DOTNET_VERSION: 8.0.x
-  TEAM_HUB_MONOREPO: https://github.com/Mitrivxxx/team-hub.git
-  TEAM_HUB_MONOREPO_REF: main
+  DOTNET_VERSION: "8.0.x"
+  # Monorepo holding building-blocks + ServiceDefaults (ProjectReference paths).
+  MONOREPO: Mitrivxxx/team-hub
+  MONOREPO_REF: main
 
 jobs:
   test:
@@ -26,16 +27,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Shared libs live in the monorepo; Dockerfile/csproj expect that layout.
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.MONOREPO }}
+          ref: ${{ env.MONOREPO_REF }}
+          path: team-hub
+
+      # Overlay this service repo onto the monorepo services path.
       - name: Checkout auth
         uses: actions/checkout@v4
-
-      - name: Prepare monorepo layout
-        id: layout
-        run: |
-          chmod +x scripts/prepare-monorepo-layout.sh
-          layout_output="$(./scripts/prepare-monorepo-layout.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/team-hub-ci" "$TEAM_HUB_MONOREPO_REF")"
-          echo "$layout_output"
-          echo "root=${layout_output#MONOREPO_ROOT=}" >> "$GITHUB_OUTPUT"
+        with:
+          path: team-hub/services/team-hub-auth
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -43,19 +47,19 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           cache: true
           cache-dependency-path: |
-            team-hub-auth/team-hub-auth.csproj
-            team-hub-auth.Tests/team-hub-auth.Tests.csproj
+            team-hub/services/team-hub-auth/team-hub-auth/team-hub-auth.csproj
+            team-hub/services/team-hub-auth/team-hub-auth.Tests/team-hub-auth.Tests.csproj
 
       - name: Restore
-        working-directory: ${{ steps.layout.outputs.root }}/services/team-hub-auth
+        working-directory: team-hub/services/team-hub-auth
         run: dotnet restore team-hub-auth.sln
 
       - name: Build
-        working-directory: ${{ steps.layout.outputs.root }}/services/team-hub-auth
+        working-directory: team-hub/services/team-hub-auth
         run: dotnet build team-hub-auth.sln --configuration Release --no-restore
 
       - name: Test
-        working-directory: ${{ steps.layout.outputs.root }}/services/team-hub-auth
+        working-directory: team-hub/services/team-hub-auth
         run: dotnet test team-hub-auth.sln --configuration Release --no-build --verbosity normal
 
   publish:
@@ -69,16 +73,17 @@ jobs:
       packages: write
 
     steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.MONOREPO }}
+          ref: ${{ env.MONOREPO_REF }}
+          path: team-hub
+
       - name: Checkout auth
         uses: actions/checkout@v4
-
-      - name: Prepare monorepo layout
-        id: layout
-        run: |
-          chmod +x scripts/prepare-monorepo-layout.sh
-          layout_output="$(./scripts/prepare-monorepo-layout.sh "$GITHUB_WORKSPACE" "$RUNNER_TEMP/team-hub-ci" "$TEAM_HUB_MONOREPO_REF")"
-          echo "$layout_output"
-          echo "root=${layout_output#MONOREPO_ROOT=}" >> "$GITHUB_OUTPUT"
+        with:
+          path: team-hub/services/team-hub-auth
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -98,13 +103,12 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
-            type=ref,event=branch
 
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ steps.layout.outputs.root }}
-          file: ${{ steps.layout.outputs.root }}/services/team-hub-auth/Dockerfile
+          context: team-hub
+          file: team-hub/services/team-hub-auth/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
