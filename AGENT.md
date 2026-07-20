@@ -7,7 +7,7 @@
 
 ## Do
 - Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET /health`.
-- Flow: JWT + refresh-token cookie.
+- Flow: JWT + refresh-token cookie (access token: `sub`, `unique_name`, `name`; no role claim).
 - Session storage: Redis (`Redis:ConnectionString`, prefix `auth:session:`).
 - Health: `GET /health` checks PostgreSQL and Redis (`200` healthy, `503` unhealthy).
 - Docker healthcheck interval: `120s` (`docker-compose.yml` + `Dockerfile`).

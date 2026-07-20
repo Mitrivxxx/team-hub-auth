@@ -30,7 +30,6 @@ public partial class AuthController
         rememberMe = session.RememberMe;
 
         var user = await db.Users
-            .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Id == session.UserId);
 
         if (user is null)
@@ -40,8 +39,7 @@ public partial class AuthController
             return Unauthorized();
         }
 
-        var roleName = user.Role?.Name;
-        var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user, roleName);
+        var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user);
         var (newRefreshToken, newRefreshTokenHash, newRefreshTokenExpiresAt) = tokenService.GenerateRefreshToken();
 
         await sessionStore.RevokeRefreshSessionAsync(refreshTokenHash);
@@ -53,6 +51,6 @@ public partial class AuthController
 
         SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt, rememberMe);
 
-        return Ok(ToAuthResponse(user, roleName, accessToken, accessTokenExpiresAt));
+        return Ok(ToAuthResponse(user, accessToken, accessTokenExpiresAt));
     }
 }

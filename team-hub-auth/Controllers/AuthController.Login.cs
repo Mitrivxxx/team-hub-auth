@@ -29,7 +29,7 @@ public partial class AuthController
             });
         }
 
-        var user = await db.Users.Include(u => u.Role)
+        var user = await db.Users
             .FirstOrDefaultAsync(u => u.Username.ToLower() == loweredUsername);
 
         var passwordIsValid = user is not null && passwordHasher.Verify(req.Password, user.Password);
@@ -62,8 +62,7 @@ public partial class AuthController
 
         await loginAttemptLimiter.ClearAttemptsAsync(loweredUsername);
 
-        var roleName = user!.Role?.Name;
-        var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user, roleName);
+        var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user);
         var (refreshToken, refreshTokenHash, refreshTokenExpiresAt) = tokenService.GenerateRefreshToken();
 
         await sessionStore.StoreRefreshSessionAsync(
@@ -76,6 +75,6 @@ public partial class AuthController
 
         logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
-        return Ok(ToAuthResponse(user!, roleName, accessToken, accessTokenExpiresAt));
+        return Ok(ToAuthResponse(user!, accessToken, accessTokenExpiresAt));
     }
 }

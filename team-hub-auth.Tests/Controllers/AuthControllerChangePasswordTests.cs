@@ -146,7 +146,7 @@ public class AuthControllerChangePasswordTests
 
     sealed class TestTokenService : ITokenService
     {
-        public (string token, DateTimeOffset expiresAt) GenerateAccessToken(User user, string? roleName) =>
+        public (string token, DateTimeOffset expiresAt) GenerateAccessToken(User user) =>
             ("access-token", DateTimeOffset.UtcNow.AddMinutes(15));
 
         public (string token, string hash, DateTimeOffset expiresAt) GenerateRefreshToken() =>

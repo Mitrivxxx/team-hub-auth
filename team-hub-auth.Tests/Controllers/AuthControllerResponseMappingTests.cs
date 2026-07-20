@@ -27,7 +27,7 @@ public class AuthControllerResponseMappingTests
 
         var response = toAuthResponseMethod!.Invoke(
             null,
-            [user, "user", "access-token", DateTimeOffset.UtcNow.AddSeconds(-15)]) as AuthResponse;
+            [user, "access-token", DateTimeOffset.UtcNow.AddSeconds(-15)]) as AuthResponse;
 
         Assert.NotNull(response);
         Assert.Equal(0, response.ExpiresInSeconds);

@@ -50,6 +50,6 @@ public partial class AuthController
 
         logger.LogInformation("User {UserId} registered successfully with username {Username}", user.Id, user.Username);
 
-        return Created($"/api/users/{user.Id}", ToResponse(user, null));
+        return Created($"/api/users/{user.Id}", ToResponse(user));
     }
 }

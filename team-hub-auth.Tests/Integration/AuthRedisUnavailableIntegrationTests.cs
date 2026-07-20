@@ -65,7 +65,6 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-        var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
 
         db.Users.Add(new User
         {
@@ -73,8 +72,7 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123456"),
-            RoleId = role.Id
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123456")
         });
         await db.SaveChangesAsync();
     }
