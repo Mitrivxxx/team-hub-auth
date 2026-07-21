@@ -160,7 +160,6 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-        var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
 
         // Ensure clean user state between tests.
         db.Users.RemoveRange(db.Users.Where(u => u.Username.ToLower() == username.ToLowerInvariant()));
@@ -172,8 +171,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
             Username = username,
             Name = "John",
             Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash(password),
-            RoleId = role.Id
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash(password)
         });
 
         await db.SaveChangesAsync();

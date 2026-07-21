@@ -1,5 +1,4 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Tokens;
 using team_hub_auth.Tests.Configuration;
@@ -27,7 +26,7 @@ public class TokenServiceTests
         };
 
         var before = DateTimeOffset.UtcNow;
-        var (token, expiresAt) = service.GenerateAccessToken(user, "admin");
+        var (token, expiresAt) = service.GenerateAccessToken(user);
         var after = DateTimeOffset.UtcNow;
 
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
@@ -36,7 +35,6 @@ public class TokenServiceTests
         Assert.Equal("TeamHubTestsAudience", jwt.Audiences.Single());
         Assert.Contains(jwt.Claims, c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == user.Id.ToString());
         Assert.Contains(jwt.Claims, c => c.Type == JwtRegisteredClaimNames.UniqueName && c.Value == user.Username);
-        Assert.Contains(jwt.Claims, c => c.Type == ClaimTypes.Role && c.Value == "admin");
         Assert.InRange(expiresAt, before.AddMinutes(15).AddSeconds(-2), after.AddMinutes(15).AddSeconds(2));
     }
 

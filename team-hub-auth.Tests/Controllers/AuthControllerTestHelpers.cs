@@ -32,18 +32,6 @@ internal static class AuthControllerTestHelpers
         return db;
     }
 
-    public static async Task<Role> EnsureRoleAsync(AuthDbContext db, string roleName)
-    {
-        var existing = await db.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
-        if (existing is not null)
-            return existing;
-
-        var role = new Role { Name = roleName };
-        db.Roles.Add(role);
-        await db.SaveChangesAsync();
-        return role;
-    }
-
     public static AuthController CreateController(
         AuthDbContext db,
         string? requestCookie = null,

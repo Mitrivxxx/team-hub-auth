@@ -11,6 +11,4 @@ public class User
     public DateTimeOffset? LockoutUntil { get; set; }
     public string? RefreshTokenHash { get; set; }
     public DateTimeOffset? RefreshTokenExpiresAt { get; set; }
-    public int? RoleId { get; set; }
-    public Role? Role { get; set; }
 }

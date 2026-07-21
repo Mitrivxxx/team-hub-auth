@@ -11,15 +11,13 @@ public class AuthControllerRegisterTests
     public async Task Register_WhenUsernameAlreadyExists_ShouldReturnConflict()
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
-        var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
         db.Users.Add(new User
         {
             Id = Guid.NewGuid(),
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
-            RoleId = role.Id
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
         });
         await db.SaveChangesAsync();
 
@@ -51,11 +49,9 @@ public class AuthControllerRegisterTests
         });
 
         var created = Assert.IsType<CreatedResult>(result);
-        var response = Assert.IsType<UserResponse>(created.Value);
+        Assert.IsType<UserResponse>(created.Value);
         var user = await db.Users.SingleAsync(u => u.Username == "john");
 
-        Assert.Null(response.Role);
-        Assert.Null(user.RoleId);
         Assert.NotEqual("secret123", user.Password);
         Assert.True(AuthControllerTestHelpers.PasswordHasher.Verify("secret123", user.Password));
     }

@@ -11,15 +11,13 @@ public class AuthControllerLogoutTests
     public async Task Logout_WhenCookieIsMissing_ShouldReturnNoContent()
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
-        var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
         var user = new User
         {
             Id = Guid.NewGuid(),
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
-            RoleId = role.Id
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -37,7 +35,6 @@ public class AuthControllerLogoutTests
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
         var sessionStore = new InMemorySessionStore();
-        var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
         var tokenService = AuthControllerTestHelpers.CreateTokenService(expireMinutes: 15);
         var (refreshToken, refreshTokenHash, refreshTokenExpiresAt) = tokenService.GenerateRefreshToken();
 
@@ -47,8 +44,7 @@ public class AuthControllerLogoutTests
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
-            RoleId = role.Id
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();

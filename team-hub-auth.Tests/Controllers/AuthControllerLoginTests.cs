@@ -29,15 +29,13 @@ public class AuthControllerLoginTests
     public async Task Login_WhenPasswordIsInvalid_ShouldReturnUnauthorized()
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
-        var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
         db.Users.Add(new User
         {
             Id = Guid.NewGuid(),
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
-            RoleId = role.Id
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
         });
         await db.SaveChangesAsync();
 
@@ -60,15 +58,13 @@ public class AuthControllerLoginTests
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
         var sessionStore = new InMemorySessionStore();
-        var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
         var user = new User
         {
             Id = Guid.NewGuid(),
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
-            RoleId = role.Id
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -104,15 +100,13 @@ public class AuthControllerLoginTests
     public async Task Login_WhenRememberMeEnabled_ShouldReturnOkWithPersistentCookie()
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
-        var role = await AuthControllerTestHelpers.EnsureRoleAsync(db, "user");
         var user = new User
         {
             Id = Guid.NewGuid(),
             Username = "john",
             Name = "John",
             Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123"),
-            RoleId = role.Id
+            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
