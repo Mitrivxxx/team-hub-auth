@@ -32,7 +32,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
         for (var i = 1; i <= 4; i++)
         {
-            var response = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+            var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
             {
                 Username = username,
                 Password = "wrong-password",
@@ -67,7 +67,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
         // 5th failure -> lockout
         for (var i = 1; i <= 5; i++)
         {
-            var response = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+            var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
             {
                 Username = username,
                 Password = "wrong-password",
@@ -124,7 +124,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
         // Trigger lockout
         for (var i = 1; i <= 5; i++)
         {
-            var response = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+            var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
             {
                 Username = username,
                 Password = "wrong-password",
@@ -134,7 +134,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
         }
 
         // Now try with correct password: should still be locked
-        var lockedResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        var lockedResponse = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
         {
             Username = username,
             Password = "secret123456",
@@ -146,7 +146,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
         // Clear lockout keys manually and try again.
         await ClearRedisKeysAsync(factory, username);
 
-        var okResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        var okResponse = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
         {
             Username = username,
             Password = "secret123456",

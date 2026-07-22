@@ -25,7 +25,7 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
         await SeedUserAsync(factory);
 
         using var client = factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest
+        var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
         {
             Username = "john",
             Password = "secret123456",
@@ -51,7 +51,7 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("Cookie", "refreshToken=test-token");
 
-        var response = await client.PostAsync("/api/auth/refresh", null);
+        var response = await client.PostAsync("/api/auth/v0.0/refresh", null);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
 

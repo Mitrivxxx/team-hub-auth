@@ -7,6 +7,7 @@
 
 ## Do
 - Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET /health`.
+- API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
 - Flow: JWT + refresh-token cookie.
 - Session storage: Redis (`Redis:ConnectionString`, prefix `auth:session:`).
 - Health: `GET /health` checks PostgreSQL and Redis (`200` healthy, `503` unhealthy).

@@ -1,10 +1,12 @@
 using System.Text;
+using Asp.Versioning;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using team_hub_auth.Data;
 using TeamHub.Redis;
 using team_hub_auth.Services.Password;
@@ -21,7 +23,21 @@ public static class ServiceCollectionExtensions
     {
         services.AddAuthorization();
         services.AddControllers();
+        services.AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(0, 0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+                options.ApiVersionReader = new UrlSegmentApiVersionReader();
+            })
+            .AddMvc()
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
         services.AddEndpointsApiExplorer();
+        services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
         services.AddSwaggerGen();
         return services;
     }

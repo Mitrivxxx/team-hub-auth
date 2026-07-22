@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using team_hub_auth.Data;
 using team_hub_auth.Services.LoginAttempts;
@@ -8,7 +9,8 @@ using team_hub_auth.Services.Tokens;
 namespace team_hub_auth.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[ApiVersion("0.0")]
+[Route("api/auth/v{version:apiVersion}")]
 public partial class AuthController(
     AuthDbContext db,
     ITokenService tokenService,
