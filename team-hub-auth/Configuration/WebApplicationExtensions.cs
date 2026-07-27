@@ -2,6 +2,7 @@ using Asp.Versioning.ApiExplorer;
 using Microsoft.AspNetCore.Diagnostics;
 using Serilog;
 using team_hub_auth.Exceptions;
+using team_hub_auth.Grpc;
 
 namespace team_hub_auth.Configuration;
 
@@ -36,6 +37,7 @@ public static class WebApplicationExtensions
 
         app.MapHealthChecks("/health");
         app.MapControllers();
+        app.MapGrpcService<UserProfileGrpcService>();
         return app;
     }
 }

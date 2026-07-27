@@ -30,6 +30,7 @@
     <ProjectReference Include="..\..\..\aspire\TeamHub.ServiceDefaults\TeamHub.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\TeamHub.Redis\TeamHub.Redis.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\TeamHub.Observability\TeamHub.Observability.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\TeamHub.GrpcContracts\TeamHub.GrpcContracts.csproj" />
   </ItemGroup>
 
 </Project>

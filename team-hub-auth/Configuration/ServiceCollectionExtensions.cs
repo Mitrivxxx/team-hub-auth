@@ -13,6 +13,7 @@ using team_hub_auth.Services.Password;
 using team_hub_auth.Services.LoginAttempts;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
+using team_hub_auth.Services.Users;
 using team_hub_auth.Validators;
 
 namespace team_hub_auth.Configuration;
@@ -91,6 +92,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IUserQueryService, UserQueryService>();
+        services.AddGrpc();
         return services;
     }
 
