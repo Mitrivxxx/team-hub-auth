@@ -22,19 +22,19 @@ public partial class AuthController
         logger.LogInformation("Password change attempt for username {Username}", username);
 
         var loweredUsername = username.ToLowerInvariant();
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == loweredUsername);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Identity.Username.ToLower() == loweredUsername);
 
         if (user is null
-            || !string.Equals(user.Name, name, StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(user.Surname, surname, StringComparison.OrdinalIgnoreCase))
+            || !string.Equals(user.Profile.Name, name, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(user.Profile.Surname, surname, StringComparison.OrdinalIgnoreCase))
         {
             logger.LogWarning("Password change failed for username {Username}", username);
             return Unauthorized();
         }
 
-        user.Password = passwordHasher.Hash(password);
-        user.FailedLoginAttempts = 0;
-        user.LockoutUntil = null;
+        user.Credentials.PasswordHash = passwordHasher.Hash(password);
+        user.Security.FailedLoginAttempts = 0;
+        user.Security.LockoutUntil = null;
         await db.SaveChangesAsync();
 
         logger.LogInformation("User {UserId} changed password successfully", user.Id);

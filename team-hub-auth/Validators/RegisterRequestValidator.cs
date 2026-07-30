@@ -31,6 +31,12 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
             .Must(UsernameValidation.IsValid)
             .WithMessage("Username must be 3-30 chars and contain only letters, digits, dot, underscore, or hyphen.");
 
+        RuleFor(x => x.Email)
+            .Cascade(CascadeMode.Stop)
+            .NotEmpty()
+            .Must(EmailValidation.IsValid)
+            .WithMessage("Email must be a valid email address.");
+
         RuleFor(x => x.Password)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()

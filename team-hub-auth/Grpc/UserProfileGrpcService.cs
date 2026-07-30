@@ -27,6 +27,7 @@ public sealed class UserProfileGrpcService(IUserQueryService userQueryService) :
         {
             Id = u.Id.ToString(),
             Username = u.Username,
+            Email = u.Email,
             Name = u.Name,
             Surname = u.Surname
         }));

@@ -14,10 +14,20 @@ public class AuthControllerLogoutTests
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Username = "john",
-            Name = "John",
-            Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
+            Identity = new UserIdentity
+            {
+                Username = "john",
+                Email = ""
+            },
+            Profile = new UserProfile
+            {
+                Name = "John",
+                Surname = "Doe"
+            },
+            Credentials = new UserCredentials
+            {
+                PasswordHash = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
+            }
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();
@@ -41,10 +51,20 @@ public class AuthControllerLogoutTests
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Username = "john",
-            Name = "John",
-            Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
+            Identity = new UserIdentity
+            {
+                Username = "john",
+                Email = ""
+            },
+            Profile = new UserProfile
+            {
+                Name = "John",
+                Surname = "Doe"
+            },
+            Credentials = new UserCredentials
+            {
+                PasswordHash = AuthControllerTestHelpers.PasswordHasher.Hash("secret123")
+            }
         };
         db.Users.Add(user);
         await db.SaveChangesAsync();

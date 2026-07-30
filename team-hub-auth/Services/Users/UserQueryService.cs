@@ -6,6 +6,23 @@ namespace team_hub_auth.Services.Users;
 
 public sealed class UserQueryService(AuthDbContext db) : IUserQueryService
 {
+    public async Task<IReadOnlyList<UserResponse>> GetAllUsersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await db.Users
+            .AsNoTracking()
+            .OrderBy(u => u.Identity.Username)
+            .Select(u => new UserResponse
+            {
+                Id = u.Id,
+                Username = u.Identity.Username,
+                Email = u.Identity.Email,
+                Name = u.Profile.Name,
+                Surname = u.Profile.Surname
+            })
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<UserResponse>> GetUsersByIdsAsync(
         IReadOnlyList<Guid> userIds,
         CancellationToken cancellationToken = default)
@@ -21,9 +38,10 @@ public sealed class UserQueryService(AuthDbContext db) : IUserQueryService
             .Select(u => new UserResponse
             {
                 Id = u.Id,
-                Username = u.Username,
-                Name = u.Name,
-                Surname = u.Surname
+                Username = u.Identity.Username,
+                Email = u.Identity.Email,
+                Name = u.Profile.Name,
+                Surname = u.Profile.Surname
             })
             .ToListAsync(cancellationToken);
     }

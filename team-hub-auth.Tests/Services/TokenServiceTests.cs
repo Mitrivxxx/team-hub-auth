@@ -22,7 +22,11 @@ public class TokenServiceTests
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Username = "john_doe"
+            Identity = new UserIdentity
+            {
+                Username = "john_doe",
+                Email = ""
+            }
         };
 
         var before = DateTimeOffset.UtcNow;
@@ -34,7 +38,7 @@ public class TokenServiceTests
         Assert.Equal("TeamHubTests", jwt.Issuer);
         Assert.Equal("TeamHubTestsAudience", jwt.Audiences.Single());
         Assert.Contains(jwt.Claims, c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == user.Id.ToString());
-        Assert.Contains(jwt.Claims, c => c.Type == JwtRegisteredClaimNames.UniqueName && c.Value == user.Username);
+        Assert.Contains(jwt.Claims, c => c.Type == JwtRegisteredClaimNames.UniqueName && c.Value == user.Identity.Username);
         Assert.InRange(expiresAt, before.AddMinutes(15).AddSeconds(-2), after.AddMinutes(15).AddSeconds(2));
     }
 

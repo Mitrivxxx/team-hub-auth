@@ -69,10 +69,20 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
         db.Users.Add(new User
         {
             Id = Guid.NewGuid(),
-            Username = "john",
-            Name = "John",
-            Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash("secret123456")
+            Identity = new UserIdentity
+            {
+                Username = "john",
+                Email = ""
+            },
+            Profile = new UserProfile
+            {
+                Name = "John",
+                Surname = "Doe"
+            },
+            Credentials = new UserCredentials
+            {
+                PasswordHash = AuthControllerTestHelpers.PasswordHasher.Hash("secret123456")
+            }
         });
         await db.SaveChangesAsync();
     }

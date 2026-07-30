@@ -162,16 +162,26 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
         var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
 
         // Ensure clean user state between tests.
-        db.Users.RemoveRange(db.Users.Where(u => u.Username.ToLower() == username.ToLowerInvariant()));
+        db.Users.RemoveRange(db.Users.Where(u => u.Identity.Username.ToLower() == username.ToLowerInvariant()));
         await db.SaveChangesAsync();
 
         db.Users.Add(new User
         {
             Id = Guid.NewGuid(),
-            Username = username,
-            Name = "John",
-            Surname = "Doe",
-            Password = AuthControllerTestHelpers.PasswordHasher.Hash(password)
+            Identity = new UserIdentity
+            {
+                Username = username,
+                Email = ""
+            },
+            Profile = new UserProfile
+            {
+                Name = "John",
+                Surname = "Doe"
+            },
+            Credentials = new UserCredentials
+            {
+                PasswordHash = AuthControllerTestHelpers.PasswordHasher.Hash(password)
+            }
         });
 
         await db.SaveChangesAsync();

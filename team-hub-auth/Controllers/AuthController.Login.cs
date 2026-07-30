@@ -30,9 +30,9 @@ public partial class AuthController
         }
 
         var user = await db.Users
-            .FirstOrDefaultAsync(u => u.Username.ToLower() == loweredUsername);
+            .FirstOrDefaultAsync(u => u.Identity.Username.ToLower() == loweredUsername);
 
-        var passwordIsValid = user is not null && passwordHasher.Verify(req.Password, user.Password);
+        var passwordIsValid = user is not null && passwordHasher.Verify(req.Password, user.Credentials.PasswordHash);
         if (!passwordIsValid)
         {
             var failureOutcome = await loginAttemptLimiter.RegisterFailedAttemptAsync(

@@ -14,6 +14,7 @@ using team_hub_auth.Services.LoginAttempts;
 using team_hub_auth.Services.Password;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
+using team_hub_auth.Services.Users;
 
 namespace team_hub_auth.Tests.Controllers;
 
@@ -38,12 +39,14 @@ internal static class AuthControllerTestHelpers
         ITokenService? tokenService = null,
         ISessionStore? sessionStore = null,
         IPasswordHasher? passwordHasher = null,
-        ILoginAttemptLimiter? loginAttemptLimiter = null)
+        ILoginAttemptLimiter? loginAttemptLimiter = null,
+        IUserQueryService? userQueryService = null)
     {
         tokenService ??= CreateTokenService(expireMinutes: 15);
         sessionStore ??= new InMemorySessionStore();
         passwordHasher ??= PasswordHasher;
         loginAttemptLimiter ??= new InMemoryLoginAttemptLimiter();
+        userQueryService ??= new UserQueryService(db);
 
         var services = new ServiceCollection();
         services.AddSingleton<IHostEnvironment>(new TestHostEnvironment { EnvironmentName = Environments.Development });
@@ -57,7 +60,14 @@ internal static class AuthControllerTestHelpers
         if (!string.IsNullOrWhiteSpace(requestCookie))
             httpContext.Request.Headers.Cookie = requestCookie;
 
-        return new AuthController(db, tokenService, sessionStore, passwordHasher, loginAttemptLimiter, NullLogger<AuthController>.Instance)
+        return new AuthController(
+            db,
+            tokenService,
+            sessionStore,
+            passwordHasher,
+            loginAttemptLimiter,
+            userQueryService,
+            NullLogger<AuthController>.Instance)
         {
             ControllerContext = new ControllerContext
             {

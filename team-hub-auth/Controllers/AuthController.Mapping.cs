@@ -8,9 +8,10 @@ public partial class AuthController
     static UserResponse ToResponse(User user) => new()
     {
         Id = user.Id,
-        Username = user.Username,
-        Name = user.Name,
-        Surname = user.Surname
+        Username = user.Identity.Username,
+        Email = user.Identity.Email,
+        Name = user.Profile.Name,
+        Surname = user.Profile.Surname
     };
 
     static AuthResponse ToAuthResponse(User user, string accessToken, DateTimeOffset accessTokenExpiresAt) => new()

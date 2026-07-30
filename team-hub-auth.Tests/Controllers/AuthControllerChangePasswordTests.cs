@@ -9,6 +9,7 @@ using team_hub_auth.Services.LoginAttempts;
 using team_hub_auth.Services.Password;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
+using team_hub_auth.Services.Users;
 
 namespace team_hub_auth.Tests.Controllers;
 
@@ -26,10 +27,20 @@ public class AuthControllerChangePasswordTests
         db.Users.Add(new User
         {
             Id = userId,
-            Username = "alice",
-            Name = "Alice",
-            Surname = "Smith",
-            Password = "old-hash",
+            Identity = new UserIdentity
+            {
+                Username = "alice",
+                Email = ""
+            },
+            Profile = new UserProfile
+            {
+                Name = "Alice",
+                Surname = "Smith"
+            },
+            Credentials = new UserCredentials
+            {
+                PasswordHash = "old-hash"
+            }
         });
         await db.SaveChangesAsync();
 
@@ -47,9 +58,9 @@ public class AuthControllerChangePasswordTests
         Assert.IsType<NoContentResult>(result);
 
         var updatedUser = await db.Users.SingleAsync(u => u.Id == userId);
-        Assert.Equal("hashed:NewPassword123!", updatedUser.Password);
-        Assert.Equal(0, updatedUser.FailedLoginAttempts);
-        Assert.Null(updatedUser.LockoutUntil);
+        Assert.Equal("hashed:NewPassword123!", updatedUser.Credentials.PasswordHash);
+        Assert.Equal(0, updatedUser.Security.FailedLoginAttempts);
+        Assert.Null(updatedUser.Security.LockoutUntil);
     }
 
     [Fact]
@@ -63,10 +74,20 @@ public class AuthControllerChangePasswordTests
         db.Users.Add(new User
         {
             Id = Guid.NewGuid(),
-            Username = "alice",
-            Name = "Alice",
-            Surname = "Smith",
-            Password = "old-hash",
+            Identity = new UserIdentity
+            {
+                Username = "alice",
+                Email = ""
+            },
+            Profile = new UserProfile
+            {
+                Name = "Alice",
+                Surname = "Smith"
+            },
+            Credentials = new UserCredentials
+            {
+                PasswordHash = "old-hash"
+            }
         });
         await db.SaveChangesAsync();
 
@@ -90,6 +111,7 @@ public class AuthControllerChangePasswordTests
             new TestSessionStore(),
             passwordHasher,
             new InMemoryLoginAttemptLimiter(),
+            new UserQueryService(db),
             NullLogger<AuthController>.Instance);
 
     sealed class InMemoryLoginAttemptLimiter : ILoginAttemptLimiter

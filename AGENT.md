@@ -6,10 +6,11 @@
 - `aspire/TeamHub.ServiceDefaults/Extensions.cs`
 
 ## Do
-- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET /health`.
+- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET users` (JWT), `GET /health`.
 - Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` on port `5101` (dev) / `8081` (docker).
 - API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
 - Flow: JWT + refresh-token cookie.
+- Swagger (Development): Authorize button with Bearer JWT; paste access token (without `Bearer ` prefix) for `[Authorize]` endpoints like `GET users`.
 - Session storage: Redis (`Redis:ConnectionString`, prefix `auth:session:`).
 - Health: `GET /health` checks PostgreSQL and Redis (`200` healthy, `503` unhealthy).
 - Docker healthcheck interval: `120s` (`docker-compose.yml` + `Dockerfile`).
@@ -30,6 +31,7 @@
   - `name`: 2-50 chars, Unicode letters, single space/’/-.
   - `surname`: 2-80 chars, Unicode letters, single space/’/-.
   - `username`: 3-30 chars, `^[a-zA-Z0-9._-]{3,30}$` (case-insensitive).
+  - `email`: valid email address, 3-254 chars (case-insensitive uniqueness).
   - `password`: 12-128 chars.
 - Cookies: `rememberMe` persistent vs session cookie behavior.
 - Dev Env: HTTP on port `5001` + gRPC `5101` (`launchSettings.json`). Postgres (`localhost:5433`, db `auth_db`). Redis (`localhost:6379`). Container `team-hub-dev`.

@@ -14,18 +14,38 @@ public class UserQueryServiceTests
         var user1 = new User
         {
             Id = Guid.NewGuid(),
-            Username = "alice",
-            Name = "Alice",
-            Surname = "Smith",
-            Password = "hash"
+            Identity = new UserIdentity
+            {
+                Username = "alice",
+                Email = ""
+            },
+            Profile = new UserProfile
+            {
+                Name = "Alice",
+                Surname = "Smith"
+            },
+            Credentials = new UserCredentials
+            {
+                PasswordHash = "hash"
+            }
         };
         var user2 = new User
         {
             Id = Guid.NewGuid(),
-            Username = "bob",
-            Name = "Bob",
-            Surname = "Jones",
-            Password = "hash"
+            Identity = new UserIdentity
+            {
+                Username = "bob",
+                Email = ""
+            },
+            Profile = new UserProfile
+            {
+                Name = "Bob",
+                Surname = "Jones"
+            },
+            Credentials = new UserCredentials
+            {
+                PasswordHash = "hash"
+            }
         };
         db.Users.AddRange(user1, user2);
         await db.SaveChangesAsync();
@@ -48,6 +68,69 @@ public class UserQueryServiceTests
 
         Assert.Empty(result);
     }
+
+    [Fact]
+    public async Task GetAllUsersAsync_ReturnsAllProfilesOrderedByUsername()
+    {
+        await using var db = CreateDb();
+        db.Users.AddRange(
+            new User
+            {
+                Id = Guid.NewGuid(),
+                Identity = new UserIdentity
+                {
+                    Username = "zoe",
+                    Email = ""
+                },
+                Profile = new UserProfile
+                {
+                    Name = "Zoe",
+                    Surname = "Zed"
+                },
+                Credentials = new UserCredentials
+                {
+                    PasswordHash = "hash"
+                }
+            },
+            new User
+            {
+                Id = Guid.NewGuid(),
+                Identity = new UserIdentity
+                {
+                    Username = "amy",
+                    Email = ""
+                },
+                Profile = new UserProfile
+                {
+                    Name = "Amy",
+                    Surname = "Ace"
+                },
+                Credentials = new UserCredentials
+                {
+                    PasswordHash = "hash"
+                }
+            });
+        await db.SaveChangesAsync();
+
+        var service = new UserQueryService(db);
+        var result = await service.GetAllUsersAsync();
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("amy", result[0].Username);
+        Assert.Equal("zoe", result[1].Username);
+    }
+
+    [Fact]
+    public async Task GetAllUsersAsync_WhenEmpty_ReturnsEmpty()
+    {
+        await using var db = CreateDb();
+        var service = new UserQueryService(db);
+
+        var result = await service.GetAllUsersAsync();
+
+        Assert.Empty(result);
+    }
+
 
     static AuthDbContext CreateDb()
     {

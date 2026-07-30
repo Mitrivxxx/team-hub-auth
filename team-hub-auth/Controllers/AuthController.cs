@@ -5,6 +5,7 @@ using team_hub_auth.Services.LoginAttempts;
 using team_hub_auth.Services.Password;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
+using team_hub_auth.Services.Users;
 
 namespace team_hub_auth.Controllers;
 
@@ -17,6 +18,7 @@ public partial class AuthController(
     ISessionStore sessionStore,
     IPasswordHasher passwordHasher,
     ILoginAttemptLimiter loginAttemptLimiter,
+    IUserQueryService userQueryService,
     ILogger<AuthController> logger) : ControllerBase
 {
     const string RefreshTokenCookieName = "refreshToken";

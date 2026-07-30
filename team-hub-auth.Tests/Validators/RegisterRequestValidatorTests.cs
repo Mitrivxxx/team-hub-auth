@@ -13,6 +13,7 @@ public class RegisterRequestValidatorTests
         var request = new RegisterRequest
         {
             Username = "john_doe_1",
+            Email = "john@example.com",
             Name = "John",
             Surname = "Doe",
             Password = "secret123456"
@@ -76,12 +77,14 @@ public class RegisterRequestValidatorTests
 
     static RegisterRequestRecord ValidRequest() => new(
         Username: "john_doe",
+        Email: "john@example.com",
         Name: "John",
         Surname: "Doe",
         Password: "secret123456");
 
     readonly record struct RegisterRequestRecord(
         string Username,
+        string Email,
         string Name,
         string Surname,
         string Password)
@@ -90,6 +93,7 @@ public class RegisterRequestValidatorTests
             new()
             {
                 Username = record.Username,
+                Email = record.Email,
                 Name = record.Name,
                 Surname = record.Surname,
                 Password = record.Password
