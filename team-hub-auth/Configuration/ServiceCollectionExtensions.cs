@@ -120,6 +120,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserQueryService, UserQueryService>();
+        services.AddScoped<DevDataSeeder>();
         services.AddGrpc();
         return services;
     }

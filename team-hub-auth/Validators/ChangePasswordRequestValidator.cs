@@ -34,8 +34,8 @@ public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRe
         RuleFor(x => x.Password)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
-            .Length(12, 128)
-            .WithMessage("Password must be 12-128 characters long.");
+            .Length(8, 128)
+            .WithMessage("Password must be 8-128 characters long.");
     }
 
     static bool IsValidHumanName(string? value, int maxLength)

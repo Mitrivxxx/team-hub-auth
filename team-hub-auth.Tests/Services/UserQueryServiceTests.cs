@@ -131,6 +131,63 @@ public class UserQueryServiceTests
         Assert.Empty(result);
     }
 
+    [Fact]
+    public async Task GetAllUsersAsync_WithPagination_ReturnsRequestedPage()
+    {
+        await using var db = CreateDb();
+        db.Users.AddRange(
+            CreateUser("amy", "Amy", "Ace"),
+            CreateUser("bob", "Bob", "Bee"),
+            CreateUser("zoe", "Zoe", "Zed"));
+        await db.SaveChangesAsync();
+
+        var service = new UserQueryService(db);
+
+        var page1 = await service.GetAllUsersAsync(page: 1, pageSize: 2);
+        var page2 = await service.GetAllUsersAsync(page: 2, pageSize: 2);
+
+        Assert.Equal(2, page1.Count);
+        Assert.Equal("amy", page1[0].Username);
+        Assert.Equal("bob", page1[1].Username);
+        Assert.Single(page2);
+        Assert.Equal("zoe", page2[0].Username);
+    }
+
+    [Fact]
+    public async Task GetAllUsersAsync_ClampsInvalidPageAndPageSize()
+    {
+        await using var db = CreateDb();
+        db.Users.AddRange(
+            CreateUser("amy", "Amy", "Ace"),
+            CreateUser("bob", "Bob", "Bee"));
+        await db.SaveChangesAsync();
+
+        var service = new UserQueryService(db);
+
+        var result = await service.GetAllUsersAsync(page: 0, pageSize: 0);
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("amy", result[0].Username);
+    }
+
+    static User CreateUser(string username, string name, string surname) => new()
+    {
+        Id = Guid.NewGuid(),
+        Identity = new UserIdentity
+        {
+            Username = username,
+            Email = ""
+        },
+        Profile = new UserProfile
+        {
+            Name = name,
+            Surname = surname
+        },
+        Credentials = new UserCredentials
+        {
+            PasswordHash = "hash"
+        }
+    };
 
     static AuthDbContext CreateDb()
     {

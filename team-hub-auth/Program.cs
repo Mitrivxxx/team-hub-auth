@@ -22,6 +22,15 @@ builder.Services.AddValidation();
 
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment() && args.Contains("--seed"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    await db.Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<DevDataSeeder>().SeedAsync();
+    return;
+}
+
 using (var scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<AuthDbContext>().Database.Migrate();

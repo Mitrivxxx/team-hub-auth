@@ -6,7 +6,12 @@
 - `aspire/TeamHub.ServiceDefaults/Extensions.cs`
 
 ## Do
-- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET users` (JWT), `GET /health`.
+- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET users` (JWT, paginated), `GET /health`.
+- `GET users?page=&pageSize=`: defaults `page=1`, `pageSize=50`; `pageSize` clamped to max `100`.
+- Dev seed: run with `ASPNETCORE_ENVIRONMENT=Development` and `--seed` (migrates, seeds active login user + 10 000 display users, exits without hosting API).
+  - Active login user: username `JanWilk123`, password `janwilk123` (Argon2 hash; JWT/refresh issued on login — not pre-seeded).
+  - Display users: half Polish / half English names (Bogus). Username = 3 letters of first name + `_` + 3 letters of surname (ASCII, unique suffix on collision); email `{username}@teamhub.local`. Shared password hash for `DemoPassword123!`.
+  - Idempotent: skips active user if username exists; skips display users when other `@teamhub.local` emails exist.
 - Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` on port `5101` (dev) / `8081` (docker).
 - API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
 - Flow: JWT + refresh-token cookie.
@@ -32,7 +37,7 @@
   - `surname`: 2-80 chars, Unicode letters, single space/’/-.
   - `username`: 3-30 chars, `^[a-zA-Z0-9._-]{3,30}$` (case-insensitive).
   - `email`: valid email address, 3-254 chars (case-insensitive uniqueness).
-  - `password`: 12-128 chars.
+  - `password`: 8-128 chars.
 - Cookies: `rememberMe` persistent vs session cookie behavior.
 - Dev Env: HTTP on port `5001` + gRPC `5101` (`launchSettings.json`). Postgres (`localhost:5433`, db `auth_db`). Redis (`localhost:6379`). Container `team-hub-dev`.
 - Prod Env (Docker): Host port 5001 (REST). Internal gRPC `8081`. Postgres (container `team-hub`, db `authdb`). Redis (`redis:6379`). Container `team-hub-auth-prod`. Connection string in auth `.env` (`ConnectionStrings__DefaultConnection`).

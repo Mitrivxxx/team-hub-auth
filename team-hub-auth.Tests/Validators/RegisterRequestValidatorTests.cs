@@ -24,6 +24,16 @@ public class RegisterRequestValidatorTests
         Assert.True(result.IsValid);
     }
 
+    [Fact]
+    public void Validate_WhenPasswordIsExactlyEightChars_ShouldPass()
+    {
+        var request = ValidRequest() with { Password = "secret12" };
+
+        var result = validator.Validate(request);
+
+        Assert.True(result.IsValid);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("ab")]
@@ -51,6 +61,7 @@ public class RegisterRequestValidatorTests
     [Theory]
     [InlineData("")]
     [InlineData("short")]
+    [InlineData("1234567")]
     public void Validate_WhenPasswordIsInvalid_ShouldFail(string password)
     {
         var request = ValidRequest() with { Password = password };

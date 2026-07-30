@@ -51,7 +51,7 @@ public class AuthControllerGetAllUsersTests
 
         var controller = AuthControllerTestHelpers.CreateController(db);
 
-        var result = await controller.GetAllUsers(CancellationToken.None);
+        var result = await controller.GetAllUsers(cancellationToken: CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var users = Assert.IsAssignableFrom<IReadOnlyList<UserResponse>>(ok.Value);
@@ -67,7 +67,7 @@ public class AuthControllerGetAllUsersTests
         await using var db = AuthControllerTestHelpers.CreateDbContext();
         var controller = AuthControllerTestHelpers.CreateController(db);
 
-        var result = await controller.GetAllUsers(CancellationToken.None);
+        var result = await controller.GetAllUsers(cancellationToken: CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var users = Assert.IsAssignableFrom<IReadOnlyList<UserResponse>>(ok.Value);
