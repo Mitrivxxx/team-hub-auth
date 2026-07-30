@@ -170,13 +170,74 @@ public class UserQueryServiceTests
         Assert.Equal("amy", result[0].Username);
     }
 
-    static User CreateUser(string username, string name, string surname) => new()
+    [Fact]
+    public async Task GetAllUsersAsync_WithQuery_MatchesNameSurnameOrEmail()
+    {
+        await using var db = CreateDb();
+        db.Users.AddRange(
+            CreateUser("amy", "Amy", "Ace", "amy@teamhub.local"),
+            CreateUser("bob", "Robert", "Bee", "bob@example.com"),
+            CreateUser("zoe", "Zoe", "Wilk", "zoe@teamhub.local"));
+        await db.SaveChangesAsync();
+
+        var service = new UserQueryService(db);
+
+        var byName = await service.GetAllUsersAsync(q: "amy");
+        var bySurname = await service.GetAllUsersAsync(q: "WILK");
+        var byEmail = await service.GetAllUsersAsync(q: "bob@example");
+
+        Assert.Single(byName);
+        Assert.Equal("amy", byName[0].Username);
+        Assert.Single(bySurname);
+        Assert.Equal("zoe", bySurname[0].Username);
+        Assert.Single(byEmail);
+        Assert.Equal("bob", byEmail[0].Username);
+    }
+
+    [Fact]
+    public async Task GetAllUsersAsync_WithFullNameQuery_MatchesNameAndSurname()
+    {
+        await using var db = CreateDb();
+        db.Users.AddRange(
+            CreateUser("amy", "Amy", "Ace", "amy@teamhub.local"),
+            CreateUser("bob", "Robert", "Bee", "bob@example.com"),
+            CreateUser("jan", "Jan", "Kowalski", "jan@teamhub.local"));
+        await db.SaveChangesAsync();
+
+        var service = new UserQueryService(db);
+
+        var byFullName = await service.GetAllUsersAsync(q: "Jan Kowalski");
+        var byReversed = await service.GetAllUsersAsync(q: "kowalski jan");
+
+        Assert.Single(byFullName);
+        Assert.Equal("jan", byFullName[0].Username);
+        Assert.Single(byReversed);
+        Assert.Equal("jan", byReversed[0].Username);
+    }
+
+    [Fact]
+    public async Task GetAllUsersAsync_WithWhitespaceQuery_ReturnsAll()
+    {
+        await using var db = CreateDb();
+        db.Users.AddRange(
+            CreateUser("amy", "Amy", "Ace"),
+            CreateUser("bob", "Bob", "Bee"));
+        await db.SaveChangesAsync();
+
+        var service = new UserQueryService(db);
+
+        var result = await service.GetAllUsersAsync(q: "   ");
+
+        Assert.Equal(2, result.Count);
+    }
+
+    static User CreateUser(string username, string name, string surname, string email = "") => new()
     {
         Id = Guid.NewGuid(),
         Identity = new UserIdentity
         {
             Username = username,
-            Email = ""
+            Email = email
         },
         Profile = new UserProfile
         {

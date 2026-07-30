@@ -6,7 +6,7 @@ namespace team_hub_auth.Controllers;
 
 public partial class AuthController
 {
-    /// <summary>List users (paginated).</summary>
+    /// <summary>List users (paginated), optional search by name, surname, or email.</summary>
     [Authorize]
     [HttpGet("users")]
     [ProducesResponseType(typeof(IReadOnlyList<UserResponse>), StatusCodes.Status200OK)]
@@ -14,9 +14,10 @@ public partial class AuthController
     public async Task<IActionResult> GetAllUsers(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
+        [FromQuery] string? q = null,
         CancellationToken cancellationToken = default)
     {
-        var users = await userQueryService.GetAllUsersAsync(page, pageSize, cancellationToken);
+        var users = await userQueryService.GetAllUsersAsync(page, pageSize, q, cancellationToken);
         return Ok(users);
     }
 }

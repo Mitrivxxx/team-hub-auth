@@ -7,6 +7,7 @@ public interface IUserQueryService
     Task<IReadOnlyList<UserResponse>> GetAllUsersAsync(
         int page = 1,
         int pageSize = 50,
+        string? q = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<UserResponse>> GetUsersByIdsAsync(

@@ -6,8 +6,9 @@
 - `aspire/TeamHub.ServiceDefaults/Extensions.cs`
 
 ## Do
-- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET users` (JWT, paginated), `GET /health`.
-- `GET users?page=&pageSize=`: defaults `page=1`, `pageSize=50`; `pageSize` clamped to max `100`.
+- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET users` (JWT, paginated, optional search), `GET /health`.
+- `GET users?page=&pageSize=&q=`: defaults `page=1`, `pageSize=50`; `pageSize` clamped to max `100`. Optional `q` filters by case-insensitive substring on `Name`, `Surname`, or `Email`; multi-word `q` (e.g. `Jan Kowalski`) requires each token to match across those fields.
+- Indexes on `users`: unique `Username`, unique filtered `Email`, `Name`, `Surname` (search), unique `RefreshTokenHash`.
 - Dev seed: run with `ASPNETCORE_ENVIRONMENT=Development` and `--seed` (migrates, seeds active login user + 10 000 display users, exits without hosting API).
   - Active login user: username `JanWilk123`, password `janwilk123` (Argon2 hash; JWT/refresh issued on login — not pre-seeded).
   - Display users: half Polish / half English names (Bogus). Username = 3 letters of first name + `_` + 3 letters of surname (ASCII, unique suffix on collision); email `{username}@teamhub.local`. Shared password hash for `DemoPassword123!`.

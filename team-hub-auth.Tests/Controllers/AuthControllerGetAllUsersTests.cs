@@ -73,4 +73,35 @@ public class AuthControllerGetAllUsersTests
         var users = Assert.IsAssignableFrom<IReadOnlyList<UserResponse>>(ok.Value);
         Assert.Empty(users);
     }
+
+    [Fact]
+    public async Task GetAllUsers_WithQuery_ShouldReturnMatchingUsers()
+    {
+        await using var db = AuthControllerTestHelpers.CreateDbContext();
+        db.Users.AddRange(
+            new User
+            {
+                Id = Guid.NewGuid(),
+                Identity = new UserIdentity { Username = "bob", Email = "bob@example.com" },
+                Profile = new UserProfile { Name = "Bob", Surname = "Jones" },
+                Credentials = new UserCredentials { PasswordHash = "hash" }
+            },
+            new User
+            {
+                Id = Guid.NewGuid(),
+                Identity = new UserIdentity { Username = "alice", Email = "alice@teamhub.local" },
+                Profile = new UserProfile { Name = "Alice", Surname = "Smith" },
+                Credentials = new UserCredentials { PasswordHash = "hash" }
+            });
+        await db.SaveChangesAsync();
+
+        var controller = AuthControllerTestHelpers.CreateController(db);
+
+        var result = await controller.GetAllUsers(q: "alice", cancellationToken: CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var users = Assert.IsAssignableFrom<IReadOnlyList<UserResponse>>(ok.Value);
+        Assert.Single(users);
+        Assert.Equal("alice", users[0].Username);
+    }
 }

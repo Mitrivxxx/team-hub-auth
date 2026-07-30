@@ -40,6 +40,9 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
                     .HasColumnName("Surname")
                     .IsRequired()
                     .HasColumnType("text");
+
+                op.HasIndex(x => x.Name);
+                op.HasIndex(x => x.Surname);
             });
 
             e.OwnsOne(u => u.Credentials, oc =>

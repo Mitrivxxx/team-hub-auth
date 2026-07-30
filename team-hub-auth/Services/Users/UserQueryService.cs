@@ -12,13 +12,43 @@ public sealed class UserQueryService(AuthDbContext db) : IUserQueryService
     public async Task<IReadOnlyList<UserResponse>> GetAllUsersAsync(
         int page = 1,
         int pageSize = DefaultPageSize,
+        string? q = null,
         CancellationToken cancellationToken = default)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize < 1 ? DefaultPageSize : Math.Min(pageSize, MaxPageSize);
 
-        return await db.Users
-            .AsNoTracking()
+        var query = db.Users.AsNoTracking();
+
+        var term = q?.Trim();
+        if (!string.IsNullOrEmpty(term))
+        {
+            var pattern = term.ToLowerInvariant();
+            var tokens = pattern
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (tokens.Length <= 1)
+            {
+                query = query.Where(u =>
+                    u.Profile.Name.ToLower().Contains(pattern) ||
+                    u.Profile.Surname.ToLower().Contains(pattern) ||
+                    u.Identity.Email.ToLower().Contains(pattern));
+            }
+            else
+            {
+                // "Jan Kowalski" — each token must match name, surname, or email
+                foreach (var token in tokens)
+                {
+                    var t = token;
+                    query = query.Where(u =>
+                        u.Profile.Name.ToLower().Contains(t) ||
+                        u.Profile.Surname.ToLower().Contains(t) ||
+                        u.Identity.Email.ToLower().Contains(t));
+                }
+            }
+        }
+
+        return await query
             .OrderBy(u => u.Identity.Username)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
