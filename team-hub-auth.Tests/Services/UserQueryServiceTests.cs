@@ -231,6 +231,44 @@ public class UserQueryServiceTests
         Assert.Equal(2, result.Count);
     }
 
+    [Fact]
+    public async Task ResolveUsersAsync_MatchesEmailAndUsername_CaseInsensitive()
+    {
+        await using var db = CreateDb();
+        var byEmail = CreateUser("alice", "Alice", "Smith", "alice@example.com");
+        var byUsername = CreateUser("bob", "Bob", "Jones", "bob@example.com");
+        db.Users.AddRange(byEmail, byUsername);
+        await db.SaveChangesAsync();
+
+        var service = new UserQueryService(db);
+        var result = await service.ResolveUsersAsync(
+            ["ALICE@EXAMPLE.COM"],
+            ["Bob"]);
+
+        Assert.Equal(2, result.Users.Count);
+        Assert.Empty(result.UnresolvedEmails);
+        Assert.Empty(result.UnresolvedUsernames);
+        Assert.Contains(result.Users, u => u.Id == byEmail.Id);
+        Assert.Contains(result.Users, u => u.Id == byUsername.Id);
+    }
+
+    [Fact]
+    public async Task ResolveUsersAsync_ReturnsUnresolvedIdentifiers()
+    {
+        await using var db = CreateDb();
+        db.Users.Add(CreateUser("alice", "Alice", "Smith", "alice@example.com"));
+        await db.SaveChangesAsync();
+
+        var service = new UserQueryService(db);
+        var result = await service.ResolveUsersAsync(
+            ["missing@example.com", "alice@example.com"],
+            ["ghost"]);
+
+        Assert.Single(result.Users);
+        Assert.Equal(["missing@example.com"], result.UnresolvedEmails);
+        Assert.Equal(["ghost"], result.UnresolvedUsernames);
+    }
+
     static User CreateUser(string username, string name, string surname, string email = "") => new()
     {
         Id = Guid.NewGuid(),

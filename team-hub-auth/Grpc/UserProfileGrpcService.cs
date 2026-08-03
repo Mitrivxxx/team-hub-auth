@@ -34,4 +34,28 @@ public sealed class UserProfileGrpcService(IUserQueryService userQueryService) :
 
         return response;
     }
+
+    /// <summary>Resolve user profiles by email and/or username.</summary>
+    public override async Task<ResolveUsersResponse> ResolveUsers(
+        ResolveUsersRequest request,
+        ServerCallContext context)
+    {
+        var result = await userQueryService.ResolveUsersAsync(
+            request.Emails.ToList(),
+            request.Usernames.ToList(),
+            context.CancellationToken);
+
+        var response = new ResolveUsersResponse();
+        response.Users.AddRange(result.Users.Select(u => new UserProfile
+        {
+            Id = u.Id.ToString(),
+            Username = u.Username,
+            Email = u.Email,
+            Name = u.Name,
+            Surname = u.Surname
+        }));
+        response.UnresolvedEmails.AddRange(result.UnresolvedEmails);
+        response.UnresolvedUsernames.AddRange(result.UnresolvedUsernames);
+        return response;
+    }
 }

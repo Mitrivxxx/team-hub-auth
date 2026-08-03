@@ -85,4 +85,51 @@ public sealed class UserQueryService(AuthDbContext db) : IUserQueryService
             })
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<ResolveUsersResult> ResolveUsersAsync(
+        IReadOnlyList<string> emails,
+        IReadOnlyList<string> usernames,
+        CancellationToken cancellationToken = default)
+    {
+        var emailKeys = NormalizeKeys(emails);
+        var usernameKeys = NormalizeKeys(usernames);
+
+        if (emailKeys.Count == 0 && usernameKeys.Count == 0)
+            return new ResolveUsersResult([], [], []);
+
+        var users = await db.Users
+            .AsNoTracking()
+            .Where(u =>
+                emailKeys.Contains(u.Identity.Email.ToLower())
+                || usernameKeys.Contains(u.Identity.Username.ToLower()))
+            .Select(u => new UserResponse
+            {
+                Id = u.Id,
+                Username = u.Identity.Username,
+                Email = u.Identity.Email,
+                Name = u.Profile.Name,
+                Surname = u.Profile.Surname
+            })
+            .ToListAsync(cancellationToken);
+
+        var matchedEmails = users
+            .Select(u => u.Email.ToLowerInvariant())
+            .ToHashSet(StringComparer.Ordinal);
+        var matchedUsernames = users
+            .Select(u => u.Username.ToLowerInvariant())
+            .ToHashSet(StringComparer.Ordinal);
+
+        var unresolvedEmails = emailKeys.Where(e => !matchedEmails.Contains(e)).ToList();
+        var unresolvedUsernames = usernameKeys.Where(u => !matchedUsernames.Contains(u)).ToList();
+
+        return new ResolveUsersResult(users, unresolvedEmails, unresolvedUsernames);
+    }
+
+    static List<string> NormalizeKeys(IReadOnlyList<string> values) =>
+        values
+            .Select(v => v?.Trim().ToLowerInvariant())
+            .Where(v => !string.IsNullOrEmpty(v))
+            .Distinct(StringComparer.Ordinal)
+            .Cast<string>()
+            .ToList();
 }

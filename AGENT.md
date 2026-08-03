@@ -13,7 +13,7 @@
   - Active login user: username `JanWilk123`, password `janwilk123` (Argon2 hash; JWT/refresh issued on login — not pre-seeded).
   - Display users: half Polish / half English names (Bogus). Username = 3 letters of first name + `_` + 3 letters of surname (ASCII, unique suffix on collision); email `{username}@teamhub.local`. Shared password hash for `DemoPassword123!`.
   - Idempotent: skips active user if username exists; skips display users when other `@teamhub.local` emails exist.
-- Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` on port `5101` (dev) / `8081` (docker).
+- Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` + `ResolveUsers` on port `5101` (dev) / `8081` (docker).
 - API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
 - Flow: JWT + refresh-token cookie.
 - Swagger (Development): Authorize button with Bearer JWT; paste access token (without `Bearer ` prefix) for `[Authorize]` endpoints like `GET users`.

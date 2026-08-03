@@ -13,4 +13,14 @@ public interface IUserQueryService
     Task<IReadOnlyList<UserResponse>> GetUsersByIdsAsync(
         IReadOnlyList<Guid> userIds,
         CancellationToken cancellationToken = default);
+
+    Task<ResolveUsersResult> ResolveUsersAsync(
+        IReadOnlyList<string> emails,
+        IReadOnlyList<string> usernames,
+        CancellationToken cancellationToken = default);
 }
+
+public sealed record ResolveUsersResult(
+    IReadOnlyList<UserResponse> Users,
+    IReadOnlyList<string> UnresolvedEmails,
+    IReadOnlyList<string> UnresolvedUsernames);
