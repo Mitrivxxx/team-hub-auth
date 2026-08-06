@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -101,7 +102,8 @@ public class AuthControllerChangePasswordTests
             Password = "NewPassword123!",
         });
 
-        Assert.IsType<UnauthorizedResult>(result);
+        var unauthorized = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status401Unauthorized, unauthorized.StatusCode);
     }
 
     static AuthController CreateController(AuthDbContext db, IPasswordHasher passwordHasher) =>
@@ -112,7 +114,13 @@ public class AuthControllerChangePasswordTests
             passwordHasher,
             new InMemoryLoginAttemptLimiter(),
             new UserQueryService(db),
-            NullLogger<AuthController>.Instance);
+            NullLogger<AuthController>.Instance)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
+        };
 
     sealed class InMemoryLoginAttemptLimiter : ILoginAttemptLimiter
     {

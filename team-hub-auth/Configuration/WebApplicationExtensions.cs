@@ -1,7 +1,5 @@
 using Asp.Versioning.ApiExplorer;
-using Microsoft.AspNetCore.Diagnostics;
-using Serilog;
-using team_hub_auth.Exceptions;
+using TeamHub.Observability;
 using team_hub_auth.Grpc;
 
 namespace team_hub_auth.Configuration;
@@ -10,14 +8,14 @@ public static class WebApplicationExtensions
 {
     public static WebApplication UseApiPipeline(this WebApplication app)
     {
-        app.UseMiddleware<ExceptionMiddleware>();
-        app.UseMiddleware<CorrelationIdMiddleware>();
+        app.UseTeamHubExceptionHandling();
+        app.UseTeamHubCorrelationId();
         app.UseMiddleware<SessionIdMiddleware>();
 
         app.UseAuthentication();
         app.UseAuthorization();
 
-        app.UseMiddleware<UserIdLoggingMiddleware>();
+        app.UseTeamHubUserIdLogging();
         app.UseSerilogRequestLoggingExcludingHealth();
 
         if (app.Environment.IsDevelopment())

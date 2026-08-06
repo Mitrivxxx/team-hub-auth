@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TeamHub.Observability;
 using team_hub_auth.Dtos;
 
 namespace team_hub_auth.Controllers;
@@ -29,7 +30,12 @@ public partial class AuthController
             || !string.Equals(user.Profile.Surname, surname, StringComparison.OrdinalIgnoreCase))
         {
             logger.LogWarning("Password change failed for username {Username}", username);
-            return Unauthorized();
+            return TeamHubProblemDetailsFactory.ObjectResult(TeamHubProblemDetailsFactory.Create(
+                HttpContext,
+                StatusCodes.Status401Unauthorized,
+                "Unauthorized",
+                "Identity verification failed.",
+                ProblemTypes.Unauthorized));
         }
 
         user.Credentials.PasswordHash = passwordHasher.Hash(password);

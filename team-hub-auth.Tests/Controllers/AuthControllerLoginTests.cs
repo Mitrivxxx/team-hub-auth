@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using TeamHub.Observability;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Sessions;
@@ -19,10 +21,13 @@ public class AuthControllerLoginTests
             Password = "secret123"
         });
 
-        var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
-        var response = Assert.IsType<AuthLoginErrorResponse>(unauthorized.Value);
-        Assert.Equal("AUTH_INVALID_CREDENTIALS", response.Code);
-        Assert.True(response.RemainingAttempts is not null);
+        var unauthorized = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ProblemDetails>(unauthorized.Value);
+        Assert.Equal(StatusCodes.Status401Unauthorized, unauthorized.StatusCode);
+        Assert.Equal(ProblemTypes.For("invalid-credentials"), problem.Type);
+        Assert.Equal("AUTH_INVALID_CREDENTIALS", problem.Extensions["code"]?.ToString());
+        Assert.True(problem.Extensions.ContainsKey("remainingAttempts"));
+        Assert.NotNull(problem.Extensions["remainingAttempts"]);
     }
 
     [Fact]
@@ -57,10 +62,13 @@ public class AuthControllerLoginTests
             Password = "wrong-password"
         });
 
-        var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
-        var response = Assert.IsType<AuthLoginErrorResponse>(unauthorized.Value);
-        Assert.Equal("AUTH_INVALID_CREDENTIALS", response.Code);
-        Assert.True(response.RemainingAttempts is not null);
+        var unauthorized = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ProblemDetails>(unauthorized.Value);
+        Assert.Equal(StatusCodes.Status401Unauthorized, unauthorized.StatusCode);
+        Assert.Equal(ProblemTypes.For("invalid-credentials"), problem.Type);
+        Assert.Equal("AUTH_INVALID_CREDENTIALS", problem.Extensions["code"]?.ToString());
+        Assert.True(problem.Extensions.ContainsKey("remainingAttempts"));
+        Assert.NotNull(problem.Extensions["remainingAttempts"]);
     }
 
     [Fact]

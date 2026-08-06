@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
+using TeamHub.Observability;
+using TeamHub.Observability.Middleware;
 using team_hub_auth.Configuration;
 using team_hub_auth.Exceptions;
 using Xunit;
@@ -26,6 +28,7 @@ public sealed class ExceptionMiddlewareTests
         var problem = await ReadProblemDetails(context);
         Assert.Equal(StatusCodes.Status500InternalServerError, context.Response.StatusCode);
         Assert.StartsWith("application/problem+json", context.Response.ContentType);
+        Assert.Equal(ProblemTypes.Internal, problem.GetProperty("type").GetString());
         Assert.Equal("Test global exception handling", problem.GetProperty("detail").GetString());
         Assert.Equal(correlationId, problem.GetProperty("correlationId").GetString());
         Assert.True(problem.TryGetProperty("stackTrace", out _));
@@ -60,12 +63,14 @@ public sealed class ExceptionMiddlewareTests
         var environment = new TestHostEnvironment { EnvironmentName = Environments.Production };
         var middleware = CreateMiddleware(
             environment,
-            _ => throw new RedisUnavailableException("Redis session store is unavailable.", new Exception("inner")));
+            _ => throw new RedisUnavailableException("Redis session store is unavailable.", new Exception("inner")),
+            new RedisUnavailableExceptionMapper());
 
         await middleware.InvokeAsync(context);
 
         var problem = await ReadProblemDetails(context);
         Assert.Equal(StatusCodes.Status503ServiceUnavailable, context.Response.StatusCode);
+        Assert.Equal(ProblemTypes.ServiceUnavailable, problem.GetProperty("type").GetString());
         Assert.Equal("Authentication service temporarily unavailable", problem.GetProperty("title").GetString());
         Assert.Equal(
             "Authentication service temporarily unavailable. Please try again later.",
@@ -88,11 +93,15 @@ public sealed class ExceptionMiddlewareTests
         return context;
     }
 
-    static ExceptionMiddleware CreateMiddleware(IHostEnvironment environment, RequestDelegate next) =>
+    static ExceptionMiddleware CreateMiddleware(
+        IHostEnvironment environment,
+        RequestDelegate next,
+        params IExceptionProblemDetailsMapper[] mappers) =>
         new(
             next,
             environment,
-            NullLogger<ExceptionMiddleware>.Instance);
+            NullLogger<ExceptionMiddleware>.Instance,
+            mappers);
 
     static async Task<JsonElement> ReadProblemDetails(HttpContext context)
     {

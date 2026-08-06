@@ -1,13 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using StackExchange.Redis;
 using Microsoft.Extensions.DependencyInjection;
-using Testcontainers.Redis;
 using Xunit;
 using team_hub_auth.Dtos;
 using team_hub_auth.Data;
 using team_hub_auth.Models;
 using team_hub_auth.Tests.Controllers;
+using TeamHub.Observability;
 
 namespace team_hub_auth.Tests.Integration;
 
@@ -40,14 +41,18 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
             });
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+            Assert.StartsWith("application/problem+json", response.Content.Headers.ContentType?.MediaType);
 
-            var body = await response.Content.ReadFromJsonAsync<AuthLoginErrorResponse>();
-            Assert.NotNull(body);
-            Assert.Equal("AUTH_INVALID_CREDENTIALS", body!.Code);
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            using var document = await JsonDocument.ParseAsync(stream);
+            var body = document.RootElement;
 
-            // After attempt i, remaining = 5 - i
-            Assert.Equal(MaxFailedLoginAttempts - i, body.RemainingAttempts);
-            Assert.Null(body.LockoutSeconds);
+            Assert.Equal(ProblemTypes.For("invalid-credentials"), body.GetProperty("type").GetString());
+            Assert.Equal("AUTH_INVALID_CREDENTIALS", body.GetProperty("code").GetString());
+            Assert.Equal(MaxFailedLoginAttempts - i, body.GetProperty("remainingAttempts").GetInt32());
+            Assert.True(
+                !body.TryGetProperty("lockoutSeconds", out var lockout) ||
+                lockout.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);
         }
     }
 
@@ -64,7 +69,6 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
         using var client = factory.CreateClient();
 
-        // 5th failure -> lockout
         for (var i = 1; i <= 5; i++)
         {
             var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
@@ -81,12 +85,17 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
             else
             {
                 Assert.Equal((HttpStatusCode)423, response.StatusCode);
+                Assert.StartsWith("application/problem+json", response.Content.Headers.ContentType?.MediaType);
 
-                var body = await response.Content.ReadFromJsonAsync<AuthLoginErrorResponse>();
-                Assert.NotNull(body);
-                Assert.Equal("AUTH_LOCKED", body!.Code);
-                Assert.Equal(0, body.RemainingAttempts);
-                Assert.NotNull(body.LockoutSeconds);
+                await using var stream = await response.Content.ReadAsStreamAsync();
+                using var document = await JsonDocument.ParseAsync(stream);
+                var body = document.RootElement;
+
+                Assert.Equal(ProblemTypes.For("account-locked"), body.GetProperty("type").GetString());
+                Assert.Equal("AUTH_LOCKED", body.GetProperty("code").GetString());
+                Assert.Equal(0, body.GetProperty("remainingAttempts").GetInt32());
+                Assert.True(body.TryGetProperty("lockoutSeconds", out var lockoutSeconds));
+                Assert.Equal(JsonValueKind.Number, lockoutSeconds.ValueKind);
             }
         }
 
@@ -101,10 +110,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
         Assert.NotNull(ttl);
         Assert.True(ttl!.Value > TimeSpan.Zero);
 
-        // Should be ~15 minutes (allow small drift).
         Assert.InRange((int)ttl.Value.TotalSeconds, 0, (int)Math.Ceiling(LockoutDuration.TotalSeconds));
-
-        // Counter should be cleared when lockout is set.
         Assert.False(await db.KeyExistsAsync(attemptsKey));
     }
 
@@ -121,7 +127,6 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
         using var client = factory.CreateClient();
 
-        // Trigger lockout
         for (var i = 1; i <= 5; i++)
         {
             var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
@@ -133,7 +138,6 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
             Assert.NotNull(response);
         }
 
-        // Now try with correct password: should still be locked
         var lockedResponse = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
         {
             Username = username,
@@ -143,7 +147,6 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
         Assert.Equal((HttpStatusCode)423, lockedResponse.StatusCode);
 
-        // Clear lockout keys manually and try again.
         await ClearRedisKeysAsync(factory, username);
 
         var okResponse = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
@@ -161,7 +164,6 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
 
-        // Ensure clean user state between tests.
         db.Users.RemoveRange(db.Users.Where(u => u.Identity.Username.ToLower() == username.ToLowerInvariant()));
         await db.SaveChangesAsync();
 
@@ -189,19 +191,15 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
     static async Task ClearRedisKeysAsync(TestAuthWebApplicationFactory factory, string username)
     {
-        // The limiter uses key segment values:
-        // - auth:login-attempts:<username>
-        // - auth:login-lockout:<username>
         var usernameLower = username.ToLowerInvariant();
         var attemptsKey = $"auth:login-attempts:{usernameLower}";
         var lockoutKey = $"auth:login-lockout:{usernameLower}";
 
         using var scope = factory.Services.CreateScope();
-        var multiplexer = scope.ServiceProvider.GetRequiredService<StackExchange.Redis.IConnectionMultiplexer>();
+        var multiplexer = scope.ServiceProvider.GetRequiredService<IConnectionMultiplexer>();
         var db = multiplexer.GetDatabase();
 
         await db.KeyDeleteAsync(attemptsKey);
         await db.KeyDeleteAsync(lockoutKey);
     }
 }
-

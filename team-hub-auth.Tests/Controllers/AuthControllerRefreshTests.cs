@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Sessions;
@@ -15,7 +16,9 @@ public class AuthControllerRefreshTests
 
         var result = await controller.Refresh();
 
-        Assert.IsType<UnauthorizedResult>(result);
+        var unauthorized = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status401Unauthorized, unauthorized.StatusCode);
+        Assert.IsType<ProblemDetails>(unauthorized.Value);
     }
 
     [Fact]
@@ -47,7 +50,9 @@ public class AuthControllerRefreshTests
         var result = await controller.Refresh();
 
         var setCookieHeader = controller.Response.Headers.SetCookie.ToString();
-        Assert.IsType<UnauthorizedResult>(result);
+        var unauthorized = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status401Unauthorized, unauthorized.StatusCode);
+        Assert.IsType<ProblemDetails>(unauthorized.Value);
         Assert.Contains("refreshToken=", setCookieHeader, StringComparison.Ordinal);
         Assert.Contains("expires=", setCookieHeader, StringComparison.OrdinalIgnoreCase);
     }

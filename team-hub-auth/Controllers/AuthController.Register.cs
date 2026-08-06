@@ -1,6 +1,7 @@
 using Medo;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TeamHub.Observability;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 
@@ -27,28 +28,34 @@ public partial class AuthController
         if (await db.Users.AnyAsync(u => u.Identity.Username.ToLower() == loweredUsername))
         {
             logger.LogWarning("Registration failed: username {Username} already exists", username);
-            return Conflict(new ValidationProblemDetails(new Dictionary<string, string[]>
-            {
-                ["username"] = ["Username is already taken."]
-            })
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Registration failed."
-            });
+            return TeamHubProblemDetailsFactory.ObjectResult(
+                TeamHubProblemDetailsFactory.CreateValidation(
+                    HttpContext,
+                    new Dictionary<string, string[]>
+                    {
+                        ["username"] = ["Username is already taken."]
+                    },
+                    StatusCodes.Status409Conflict,
+                    "Registration failed.",
+                    detail: null,
+                    ProblemTypes.Conflict));
         }
 
         var loweredEmail = email.ToLowerInvariant();
         if (await db.Users.AnyAsync(u => u.Identity.Email.ToLower() == loweredEmail))
         {
             logger.LogWarning("Registration failed: email {Email} already exists", email);
-            return Conflict(new ValidationProblemDetails(new Dictionary<string, string[]>
-            {
-                ["email"] = ["Email is already registered."]
-            })
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Registration failed."
-            });
+            return TeamHubProblemDetailsFactory.ObjectResult(
+                TeamHubProblemDetailsFactory.CreateValidation(
+                    HttpContext,
+                    new Dictionary<string, string[]>
+                    {
+                        ["email"] = ["Email is already registered."]
+                    },
+                    StatusCodes.Status409Conflict,
+                    "Registration failed.",
+                    detail: null,
+                    ProblemTypes.Conflict));
         }
 
         var user = new User

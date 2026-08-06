@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using TeamHub.Observability;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 
@@ -21,12 +22,14 @@ public partial class AuthController
         if (lockoutStatus.IsLocked)
         {
             logger.LogWarning("Login blocked for username {Username} due to active lockout", username);
-            return StatusCode(StatusCodes.Status423Locked, new AuthLoginErrorResponse
-            {
-                Code = "AUTH_LOCKED",
-                RemainingAttempts = 0,
-                LockoutSeconds = lockoutStatus.LockoutSeconds
-            });
+            return LoginProblem(
+                StatusCodes.Status423Locked,
+                ProblemTypes.For("account-locked"),
+                "Account locked",
+                "Account is locked due to too many failed login attempts.",
+                code: "AUTH_LOCKED",
+                remainingAttempts: 0,
+                lockoutSeconds: lockoutStatus.LockoutSeconds);
         }
 
         var user = await db.Users
@@ -44,20 +47,24 @@ public partial class AuthController
 
             if (failureOutcome.IsLocked)
             {
-                return StatusCode(StatusCodes.Status423Locked, new AuthLoginErrorResponse
-                {
-                    Code = "AUTH_LOCKED",
-                    RemainingAttempts = 0,
-                    LockoutSeconds = failureOutcome.LockoutSeconds
-                });
+                return LoginProblem(
+                    StatusCodes.Status423Locked,
+                    ProblemTypes.For("account-locked"),
+                    "Account locked",
+                    "Account is locked due to too many failed login attempts.",
+                    code: "AUTH_LOCKED",
+                    remainingAttempts: 0,
+                    lockoutSeconds: failureOutcome.LockoutSeconds);
             }
 
-            return Unauthorized(new AuthLoginErrorResponse
-            {
-                Code = "AUTH_INVALID_CREDENTIALS",
-                RemainingAttempts = failureOutcome.RemainingAttempts,
-                LockoutSeconds = null
-            });
+            return LoginProblem(
+                StatusCodes.Status401Unauthorized,
+                ProblemTypes.For("invalid-credentials"),
+                "Unauthorized",
+                "Invalid username or password.",
+                code: "AUTH_INVALID_CREDENTIALS",
+                remainingAttempts: failureOutcome.RemainingAttempts,
+                lockoutSeconds: null);
         }
 
         await loginAttemptLimiter.ClearAttemptsAsync(loweredUsername);
@@ -76,5 +83,30 @@ public partial class AuthController
         logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
         return Ok(ToAuthResponse(user!, accessToken, accessTokenExpiresAt));
+    }
+
+    IActionResult LoginProblem(
+        int statusCode,
+        string type,
+        string title,
+        string detail,
+        string code,
+        int? remainingAttempts,
+        int? lockoutSeconds)
+    {
+        var problem = TeamHubProblemDetailsFactory.Create(
+            HttpContext,
+            statusCode,
+            title,
+            detail,
+            type,
+            new Dictionary<string, object?>
+            {
+                ["code"] = code,
+                ["remainingAttempts"] = remainingAttempts,
+                ["lockoutSeconds"] = lockoutSeconds
+            });
+
+        return TeamHubProblemDetailsFactory.ObjectResult(problem);
     }
 }

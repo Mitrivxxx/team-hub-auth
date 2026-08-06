@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using team_hub_auth.Data;
 using TeamHub.Redis;
@@ -16,6 +16,7 @@ using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
 using team_hub_auth.Services.Users;
 using team_hub_auth.Validators;
+using TeamHub.Observability;
 
 namespace team_hub_auth.Configuration;
 
@@ -25,6 +26,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddAuthorization();
         services.AddControllers();
+        services.AddTeamHubProblemDetails();
         services.AddApiVersioning(options =>
             {
                 options.DefaultApiVersion = new ApiVersion(0, 0);
@@ -52,19 +54,9 @@ public static class ServiceCollectionExtensions
                 BearerFormat = "JWT"
             });
 
-            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    },
-                    Array.Empty<string>()
-                }
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = []
             });
         });
         return services;
@@ -120,7 +112,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserQueryService, UserQueryService>();
-        services.AddScoped<DevDataSeeder>();
+        services.AddTeamHubExceptionMapper<RedisUnavailableExceptionMapper>();
         services.AddGrpc();
         return services;
     }

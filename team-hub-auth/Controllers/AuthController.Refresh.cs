@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TeamHub.Observability;
 
 namespace team_hub_auth.Controllers;
 
@@ -16,7 +17,7 @@ public partial class AuthController
             StringComparison.Ordinal);
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
-            return Unauthorized();
+            return UnauthorizedProblem("Refresh token is missing.");
         }
 
         var refreshTokenHash = tokenService.HashRefreshToken(refreshToken);
@@ -24,7 +25,7 @@ public partial class AuthController
         if (session is null)
         {
             DeleteRefreshTokenCookie();
-            return Unauthorized();
+            return UnauthorizedProblem("Refresh token is invalid or expired.");
         }
 
         rememberMe = session.RememberMe;
@@ -36,7 +37,7 @@ public partial class AuthController
         {
             await sessionStore.RevokeRefreshSessionAsync(refreshTokenHash);
             DeleteRefreshTokenCookie();
-            return Unauthorized();
+            return UnauthorizedProblem("Refresh session user was not found.");
         }
 
         var (accessToken, accessTokenExpiresAt) = tokenService.GenerateAccessToken(user);
@@ -53,4 +54,12 @@ public partial class AuthController
 
         return Ok(ToAuthResponse(user, accessToken, accessTokenExpiresAt));
     }
+
+    IActionResult UnauthorizedProblem(string detail) =>
+        TeamHubProblemDetailsFactory.ObjectResult(TeamHubProblemDetailsFactory.Create(
+            HttpContext,
+            StatusCodes.Status401Unauthorized,
+            "Unauthorized",
+            detail,
+            ProblemTypes.Unauthorized));
 }

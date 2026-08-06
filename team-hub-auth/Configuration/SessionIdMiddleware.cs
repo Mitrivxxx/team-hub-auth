@@ -14,10 +14,14 @@ public sealed class SessionIdMiddleware(RequestDelegate next)
         {
             sessionId = Guid.NewGuid().ToString();
         }
+        else
+        {
+            sessionId = sessionId.Trim();
+        }
 
         context.Request.Headers[HeaderName] = sessionId;
         context.Items[ItemKey] = sessionId;
-        context.Response.Headers.Append(HeaderName, sessionId);
+        context.Response.Headers[HeaderName] = sessionId;
 
         using (LogContext.PushProperty(ItemKey, sessionId))
         {

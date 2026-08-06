@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
-using team_hub_auth.Configuration;
+using TeamHub.Observability.Middleware;
 using Xunit;
 
 namespace team_hub_auth.Tests.Configuration;

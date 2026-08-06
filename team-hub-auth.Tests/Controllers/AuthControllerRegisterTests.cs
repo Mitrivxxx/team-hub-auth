@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TeamHub.Observability;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 
@@ -42,7 +44,12 @@ public class AuthControllerRegisterTests
             Password = "secret123456"
         });
 
-        Assert.IsType<ConflictObjectResult>(result);
+        Assert.IsType<ObjectResult>(result);
+        var conflict = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, conflict.StatusCode);
+        var problem = Assert.IsType<ValidationProblemDetails>(conflict.Value);
+        Assert.Equal(ProblemTypes.Conflict, problem.Type);
+        Assert.True(problem.Errors.ContainsKey("username"));
     }
 
     [Fact]

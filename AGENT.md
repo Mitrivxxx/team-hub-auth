@@ -2,17 +2,20 @@
 - Short context for the auth service agent.
 
 ## Source of truth
-- `team-hub-auth/` (`Program.cs`, `Controllers/AuthController*`, `Configuration/`, `Data/AuthDbContext.cs`, `appsettings*.json`, `.env*`)
+- `team-hub-auth/` (`Program.cs`, `Controllers/AuthController*`, `Configuration/`, `Seeding/`, `Data/AuthDbContext.cs`, `appsettings*.json`, `.env*`)
 - `aspire/TeamHub.ServiceDefaults/Extensions.cs`
 
 ## Do
 - Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET users` (JWT, paginated, optional search), `GET /health`.
 - `GET users?page=&pageSize=&q=`: defaults `page=1`, `pageSize=50`; `pageSize` clamped to max `100`. Optional `q` filters by case-insensitive substring on `Name`, `Surname`, or `Email`; multi-word `q` (e.g. `Jan Kowalski`) requires each token to match across those fields.
 - Indexes on `users`: unique `Username`, unique filtered `Email`, `Name`, `Surname` (search), unique `RefreshTokenHash`.
-- Dev seed: run with `ASPNETCORE_ENVIRONMENT=Development` and `--seed` (migrates, seeds active login user + 10 000 display users, exits without hosting API).
-  - Active login user: username `JanWilk123`, password `janwilk123` (Argon2 hash; JWT/refresh issued on login — not pre-seeded).
-  - Display users: half Polish / half English names (Bogus). Username = 3 letters of first name + `_` + 3 letters of surname (ASCII, unique suffix on collision); email `{username}@teamhub.local`. Shared password hash for `DemoPassword123!`.
-  - Idempotent: skips active user if username exists; skips display users when other `@teamhub.local` emails exist.
+- Demo seed (`Seeding/`): run with `--seed` when `ASPNETCORE_ENVIRONMENT` is `Development` or `Staging` and `Seed:Enabled=true` (migrates, seeds, exits without hosting API). Production is blocked.
+  - Config: `Seed` in `appsettings.{Environment}.json` (`UserCount` Development=100, Staging=10 000). Do not log passwords.
+  - Active login user: username `JanWilk123`, password from `Seed:ActivePassword` (Argon2; JWT/refresh on login — not pre-seeded).
+  - Bulk users: deterministic usernames `demo00001`…`demo{N:D5}`, email `{username}@teamhub.local`, Bogus PL/EN display names, shared `Seed:DemoPassword` hash.
+  - Layout: `Seeding/Development|Staging/*DataSeeder`, helpers `Seeding/Users/ActiveDemoUserSeeder` + `BulkDemoUserSeeder`. Domain/persistence stay in `Data/`.
+  - Idempotent: skips active user if username exists; skips bulk when other `@teamhub.local` emails exist.
+  - Seed organization after auth (org resolves users via auth gRPC).
 - Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` + `ResolveUsers` on port `5101` (dev) / `8081` (docker).
 - API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
 - Flow: JWT + refresh-token cookie.
@@ -22,17 +25,19 @@
 - Docker healthcheck interval: `120s` (`docker-compose.yml` + `Dockerfile`).
 - Kestrel: REST/health on `8080` (Http1AndHttp2), gRPC on `8081` (Http2 only).
 - Shared contracts: `building-blocks/TeamHub.GrpcContracts` (`Protos/auth/v1/user_profile.proto`).
-- Exclude `/health` and `/metrics` from Serilog request logging (`UseSerilogRequestLoggingExcludingHealth`).
-- Observability via `TeamHub.Observability`: OTLP traces/logs, Prometheus `/metrics`, EF Core tracing.
-- Keep `ExceptionMiddleware` as the first middleware (global try/catch; Serilog `Error` with stack trace; RFC 7807 `ProblemDetails`).
-- Return `application/problem+json` with `correlationId` (and `sessionId` when present) in ProblemDetails extensions.
+- Exclude `/health` and `/metrics` from Serilog request logging (`UseSerilogRequestLoggingExcludingHealth` from `TeamHub.Observability`).
+- Observability via `TeamHub.Observability`: OTLP traces/logs, Prometheus `/metrics`, EF Core tracing, shared Exception/CorrelationId/UserIdLogging middleware.
+- Keep `UseTeamHubExceptionHandling` as the first middleware (global try/catch; Serilog `Error` with stack trace; RFC 9457 `ProblemDetails`).
+- Register `AddTeamHubProblemDetails()` for ModelState / FluentValidation `ValidationProblemDetails`.
+- Return `application/problem+json` with stable `type` URIs (`https://teamhub.dev/problems/...`), `correlationId` (and `sessionId` when present).
 - In Development only: include `stackTrace` and exception message in ProblemDetails; in Production/Staging use generic detail (no stack trace in HTTP response).
-- `RedisUnavailableException` → `503` ProblemDetails (authentication service temporarily unavailable).
+- `RedisUnavailableException` → `503` ProblemDetails (`type` = `…/service-unavailable`) via `RedisUnavailableExceptionMapper` (`AddTeamHubExceptionMapper`).
 - Lockout: Redis-based per-username limiter (keys `auth:login-attempts:` / `auth:login-lockout:`).
   - 5 failed attempts = 15-min lockout.
-  - `POST /login`:
-    - invalid credentials: `401` with `{ code: "AUTH_INVALID_CREDENTIALS", remainingAttempts }`
-    - locked: `423` with `{ code: "AUTH_LOCKED", lockoutSeconds }`
+  - `POST /login` errors are RFC 9457 ProblemDetails:
+    - invalid credentials: `401` `type=…/invalid-credentials` with extensions `code=AUTH_INVALID_CREDENTIALS`, `remainingAttempts`
+    - locked: `423` `type=…/account-locked` with extensions `code=AUTH_LOCKED`, `lockoutSeconds`
+- Error catalog: `docs/errors.mb`.
 - Validation:
   - `name`: 2-50 chars, Unicode letters, single space/’/-.
   - `surname`: 2-80 chars, Unicode letters, single space/’/-.
@@ -43,10 +48,10 @@
 - Dev Env: HTTP on port `5001` + gRPC `5101` (`launchSettings.json`). Postgres (`localhost:5433`, db `auth_db`). Redis (`localhost:6379`). Container `team-hub-dev`.
 - Prod Env (Docker): Host port 5001 (REST). Internal gRPC `8081`. Postgres (container `team-hub`, db `authdb`). Redis (`redis:6379`). Container `team-hub-auth-prod`. Connection string in auth `.env` (`ConnectionStrings__DefaultConnection`).
 - Integration tests: `team-hub-auth.Tests/Integration` (requires Docker; Testcontainers Redis and PostgreSQL).
-- Keep `CorrelationIdMiddleware` before authentication (`X-Correlation-ID` = OpenTelemetry `TraceId`; echo on response).
-- Keep `SessionIdMiddleware` after `CorrelationIdMiddleware` (header `X-Session-ID`; fallback `Guid` when missing; echo in response).
-- Keep `UserIdLoggingMiddleware` after `UseAuthentication` / `UseAuthorization` (JWT `sub` or `NameIdentifier` → `LogContext.UserId`).
-- Keep `UseSerilogRequestLoggingExcludingHealth` after `UserIdLoggingMiddleware` so request logs include `TraceId`, `SpanId`, `CorrelationId`, `SessionId`, and `UserId`.
+- Keep `UseTeamHubCorrelationId` before authentication (`X-Correlation-ID` = OpenTelemetry `TraceId`; echo on response).
+- Keep `SessionIdMiddleware` after CorrelationId (header `X-Session-ID`; fallback `Guid` when missing; echo in response).
+- Keep `UseTeamHubUserIdLogging` after `UseAuthentication` / `UseAuthorization` (JWT `sub` or `NameIdentifier` → `LogContext.UserId`).
+- Keep `UseSerilogRequestLoggingExcludingHealth` after UserIdLogging so request logs include `TraceId`, `SpanId`, `CorrelationId`, `SessionId`, and `UserId`.
 - Dev log template: `[{Level:u3}] [{TraceId}] [{SpanId}] [{CorrelationId}] [{SessionId}] [{UserId}] ...` (no `{Timestamp}` — Loki adds its own).
 - Prod logs: Serilog compact JSON + OTLP sink to collector; structured fields `TraceId`, `SpanId`, `CorrelationId`, `SessionId`, `UserId`.
 - Cookie-only endpoints (`login`, `register`, `refresh`, `logout`) have empty `UserId` unless `Authorization: Bearer` is sent.
