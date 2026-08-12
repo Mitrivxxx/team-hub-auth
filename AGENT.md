@@ -11,11 +11,12 @@
 - Indexes on `users`: unique `Username`, unique filtered `Email`, `Name`, `Surname` (search), unique `RefreshTokenHash`.
 - Demo seed (`Seeding/`): run with `--seed` when `ASPNETCORE_ENVIRONMENT` is `Development` or `Staging` and `Seed:Enabled=true` (migrates, seeds, exits without hosting API). Production is blocked.
   - Config: `Seed` in `appsettings.{Environment}.json` (`UserCount` Development=100, Staging=10 000). Do not log passwords.
-  - Active login user: username `JanWilk123`, password from `Seed:ActivePassword` (Argon2; JWT/refresh on login — not pre-seeded).
-  - Bulk users: deterministic usernames `demo00001`…`demo{N:D5}`, email `{username}@teamhub.local`, Bogus PL/EN display names, shared `Seed:DemoPassword` hash.
+  - Active login user: username `JanWilk123`, password `janwilk123` / `Seed:ActivePassword` (Argon2; JWT/refresh on login — not pre-seeded). Email `janwilk123@teamhub.local`.
+  - Bulk users (`TeamHub.DemoSeed`): username `Name+Surname+123`, password and email local-part = lowercase username (same rule as active user). Bogus PL/EN names; reserved active username excluded. Collision suffix before `123` when needed.
   - Layout: `Seeding/Development|Staging/*DataSeeder`, helpers `Seeding/Users/ActiveDemoUserSeeder` + `BulkDemoUserSeeder`. Domain/persistence stay in `Data/`.
   - Idempotent: skips active user if username exists; skips bulk when other `@teamhub.local` emails exist.
   - Seed organization after auth (org resolves users via auth gRPC).
+  - Aspire one-shot: `cd aspire/TeamHub.AppHost && dotnet run -- --seed` (runs this seeder, then org; see `aspire/AGENT.md`).
 - Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` + `ResolveUsers` on port `5101` (dev) / `8081` (docker).
 - API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
 - Flow: JWT + refresh-token cookie.
@@ -46,7 +47,8 @@
   - `password`: 8-128 chars.
 - Cookies: `rememberMe` persistent vs session cookie behavior.
 - Dev Env: HTTP on port `5001` + gRPC `5101` (`launchSettings.json`). Postgres (`localhost:5433`, db `auth_db`). Redis (`localhost:6379`). Container `team-hub-dev`.
-- Prod Env (Docker): Host port 5001 (REST). Internal gRPC `8081`. Postgres (container `team-hub`, db `authdb`). Redis (`redis:6379`). Container `team-hub-auth-prod`. Connection string in auth `.env` (`ConnectionStrings__DefaultConnection`).
+- Local `.env` (from `.env.example`): optional for standalone `dotnet run` outside Aspire. Under Aspire, AppHost injects `ConnectionStrings` / Redis / Jwt — DotNetEnv uses `NoClobber` so those win over `.env` (do not expect fixed Postgres `5433`).
+- Prod Env (Docker): Host port 5001 (REST). Internal gRPC `8081`. Postgres (container `db-postgres`, db `authdb`). Redis (`cache-redis:6379`). Container `srv-auth-prod`. Connection string in auth `.env` (`ConnectionStrings__DefaultConnection`); compose also sets `Redis__ConnectionString=cache-redis:6379`.
 - Integration tests: `team-hub-auth.Tests/Integration` (requires Docker; Testcontainers Redis and PostgreSQL).
 - Keep `UseTeamHubCorrelationId` before authentication (`X-Correlation-ID` = OpenTelemetry `TraceId`; echo on response).
 - Keep `SessionIdMiddleware` after CorrelationId (header `X-Session-ID`; fallback `Guid` when missing; echo in response).

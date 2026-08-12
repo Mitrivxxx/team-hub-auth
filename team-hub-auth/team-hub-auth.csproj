@@ -10,7 +10,6 @@
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
-    <PackageReference Include="Bogus" Version="35.6.3" />
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
@@ -29,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\aspire\TeamHub.ServiceDefaults\TeamHub.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\TeamHub.DemoSeed\TeamHub.DemoSeed.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\TeamHub.Redis\TeamHub.Redis.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\TeamHub.Observability\TeamHub.Observability.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\TeamHub.GrpcContracts\TeamHub.GrpcContracts.csproj" />

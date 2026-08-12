@@ -1,7 +1,7 @@
-using Bogus;
 using Medo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using TeamHub.DemoSeed;
 using team_hub_auth.Configuration;
 using team_hub_auth.Data;
 using team_hub_auth.Models;
@@ -40,13 +40,14 @@ public sealed class BulkDemoUserSeeder(
             return;
         }
 
-        var passwordHash = passwordHasher.Hash(seed.DemoPassword);
-        var polishFaker = new Faker("pl");
-        var englishFaker = new Faker("en");
+        var identities = DemoUserIdentityFactory.CreateMany(
+            userCount,
+            seed.EmailDomain,
+            seed.ActiveUsername);
         var batchSize = seed.BatchSize;
 
         logger.LogInformation(
-            "Seeding {Count} demo users (deterministic demoNNNNN usernames, 50% Polish names)...",
+            "Seeding {Count} demo users (NameSurname123 usernames, password/email = lowercase login)...",
             userCount);
 
         for (var offset = 0; offset < userCount; offset += batchSize)
@@ -56,27 +57,23 @@ public sealed class BulkDemoUserSeeder(
 
             for (var i = 0; i < count; i++)
             {
-                var n = offset + i + 1;
-                var usePolish = n <= userCount / 2;
-                var faker = usePolish ? polishFaker : englishFaker;
-                var username = $"demo{n:D5}";
-
+                var identity = identities[offset + i];
                 batch.Add(new User
                 {
                     Id = Uuid7.NewGuid(),
                     Identity = new UserIdentity
                     {
-                        Username = username,
-                        Email = $"{username}{seed.EmailDomain}"
+                        Username = identity.Username,
+                        Email = identity.Email
                     },
                     Profile = new UserProfile
                     {
-                        Name = faker.Name.FirstName(),
-                        Surname = faker.Name.LastName()
+                        Name = identity.Name,
+                        Surname = identity.Surname
                     },
                     Credentials = new UserCredentials
                     {
-                        PasswordHash = passwordHash
+                        PasswordHash = passwordHasher.Hash(identity.Password)
                     }
                 });
             }

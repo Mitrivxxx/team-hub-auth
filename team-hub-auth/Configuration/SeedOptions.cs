@@ -22,7 +22,4 @@ public sealed class SeedOptions
 
     [Required]
     public string ActivePassword { get; init; } = "janwilk123";
-
-    [Required]
-    public string DemoPassword { get; init; } = "DemoPassword123!";
 }

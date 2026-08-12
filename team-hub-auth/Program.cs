@@ -6,7 +6,8 @@ using team_hub_auth.Data;
 using team_hub_auth.Seeding;
 using team_hub_auth.Seeding.Abstractions;
 
-Env.TraversePath().Load();
+// NoClobber: Aspire/Compose env (ConnectionStrings, Redis, Jwt) must win over local .env.
+Env.NoClobber().TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
