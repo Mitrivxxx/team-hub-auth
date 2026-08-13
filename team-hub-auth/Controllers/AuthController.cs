@@ -19,6 +19,7 @@ public partial class AuthController(
     IPasswordHasher passwordHasher,
     ILoginAttemptLimiter loginAttemptLimiter,
     IUserQueryService userQueryService,
+    IUserResponseMapper userResponseMapper,
     ILogger<AuthController> logger) : ControllerBase
 {
     const string RefreshTokenCookieName = "refreshToken";

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using TeamHub.BlobStorage;
 using team_hub_auth.Configuration;
 using team_hub_auth.Tests.Configuration;
 using team_hub_auth.Controllers;
@@ -40,13 +41,15 @@ internal static class AuthControllerTestHelpers
         ISessionStore? sessionStore = null,
         IPasswordHasher? passwordHasher = null,
         ILoginAttemptLimiter? loginAttemptLimiter = null,
-        IUserQueryService? userQueryService = null)
+        IUserQueryService? userQueryService = null,
+        IUserResponseMapper? userResponseMapper = null)
     {
         tokenService ??= CreateTokenService(expireMinutes: 15);
         sessionStore ??= new InMemorySessionStore();
         passwordHasher ??= PasswordHasher;
         loginAttemptLimiter ??= new InMemoryLoginAttemptLimiter();
         userQueryService ??= new UserQueryService(db);
+        userResponseMapper ??= CreateUserResponseMapper();
 
         var services = new ServiceCollection();
         services.AddSingleton<IHostEnvironment>(new TestHostEnvironment { EnvironmentName = Environments.Development });
@@ -67,6 +70,7 @@ internal static class AuthControllerTestHelpers
             passwordHasher,
             loginAttemptLimiter,
             userQueryService,
+            userResponseMapper,
             NullLogger<AuthController>.Instance)
         {
             ControllerContext = new ControllerContext
@@ -74,6 +78,14 @@ internal static class AuthControllerTestHelpers
                 HttpContext = httpContext
             }
         };
+    }
+
+    public static IUserResponseMapper CreateUserResponseMapper(IBlobStorageService? blobStorage = null)
+    {
+        var services = new ServiceCollection();
+        if (blobStorage is not null)
+            services.AddSingleton(blobStorage);
+        return new UserResponseMapper(services.BuildServiceProvider());
     }
 
     public static TokenService CreateTokenService(int expireMinutes)

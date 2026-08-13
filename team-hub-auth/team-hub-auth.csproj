@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\..\building-blocks\TeamHub.Redis\TeamHub.Redis.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\TeamHub.Observability\TeamHub.Observability.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\TeamHub.GrpcContracts\TeamHub.GrpcContracts.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\TeamHub.BlobStorage\TeamHub.BlobStorage.csproj" />
   </ItemGroup>
 
 </Project>

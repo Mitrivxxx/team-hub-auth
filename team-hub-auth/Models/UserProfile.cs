@@ -4,5 +4,6 @@ public sealed class UserProfile
 {
     public string Name { get; set; } = "";
     public string Surname { get; set; } = "";
+    public string? AvatarUrl { get; set; }
 }
 

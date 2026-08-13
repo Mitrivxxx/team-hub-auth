@@ -19,6 +19,7 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddRedisSessionStore(builder.Configuration);
 builder.Services.AddAuthHealthChecks(builder.Configuration);
 builder.Services.AddJwtConfiguration(builder.Configuration);
+builder.Services.AddAuthBlobStorage(builder.Configuration, builder.Environment);
 builder.Services.AddApplicationServices();
 builder.Services.AddDemoSeeding(builder.Configuration, builder.Environment);
 builder.Services.AddApiInfrastructure();

@@ -41,6 +41,10 @@ public class AuthDbContext(DbContextOptions<AuthDbContext> options) : DbContext(
                     .IsRequired()
                     .HasColumnType("text");
 
+                op.Property(x => x.AvatarUrl)
+                    .HasColumnName("AvatarUrl")
+                    .HasColumnType("text");
+
                 op.HasIndex(x => x.Name);
                 op.HasIndex(x => x.Surname);
             });

@@ -2,15 +2,17 @@
 - Short context for the auth service agent.
 
 ## Source of truth
-- `team-hub-auth/` (`Program.cs`, `Controllers/AuthController*`, `Configuration/`, `Seeding/`, `Data/AuthDbContext.cs`, `appsettings*.json`, `.env*`)
+- `team-hub-auth/` (`Program.cs`, `Controllers/AuthController*`, `Controllers/MeController.cs`, `Configuration/`, `Seeding/`, `Data/AuthDbContext.cs`, `appsettings*.json`, `.env*`)
 - `aspire/TeamHub.ServiceDefaults/Extensions.cs`
 
 ## Do
-- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password`, `GET users` (JWT, paginated, optional search), `GET /health`.
+- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password` (public identity reset), `GET/PATCH /me` (JWT), `POST /me/change-password` (JWT, current + new password), `PUT|DELETE /me/avatar` (JWT), `GET users` (JWT, paginated, optional search), `GET /health`.
+- `GET/PATCH /me`: current user profile; PATCH `{ name?, surname?, email? }` (at least one field); username is read-only; `409` on duplicate email. `UserResponse.avatarUrl` is a SAS URL (nullable).
+- `PUT|DELETE /me/avatar`: JPEG/PNG/WebP, max 2 MB; blob path `users/{userId}/avatar.{ext}`; `503` when blob storage is not configured. Production requires `BlobStorage:ConnectionString`.
 - `GET users?page=&pageSize=&q=`: defaults `page=1`, `pageSize=50`; `pageSize` clamped to max `100`. Optional `q` filters by case-insensitive substring on `Name`, `Surname`, or `Email`; multi-word `q` (e.g. `Jan Kowalski`) requires each token to match across those fields.
 - Indexes on `users`: unique `Username`, unique filtered `Email`, `Name`, `Surname` (search), unique `RefreshTokenHash`.
 - Demo seed (`Seeding/`): run with `--seed` when `ASPNETCORE_ENVIRONMENT` is `Development` or `Staging` and `Seed:Enabled=true` (migrates, seeds, exits without hosting API). Production is blocked.
-  - Config: `Seed` in `appsettings.{Environment}.json` (`UserCount` Development=100, Staging=10 000). Do not log passwords.
+  - Config: `Seed` in `appsettings.{Environment}.json` (`UserCount` Development=50, Staging=10 000). Do not log passwords.
   - Active login user: username `JanWilk123`, password `janwilk123` / `Seed:ActivePassword` (Argon2; JWT/refresh on login — not pre-seeded). Email `janwilk123@teamhub.local`.
   - Bulk users (`TeamHub.DemoSeed`): username `Name+Surname+123`, password and email local-part = lowercase username (same rule as active user). Bogus PL/EN names; reserved active username excluded. Collision suffix before `123` when needed.
   - Layout: `Seeding/Development|Staging/*DataSeeder`, helpers `Seeding/Users/ActiveDemoUserSeeder` + `BulkDemoUserSeeder`. Domain/persistence stay in `Data/`.
@@ -20,7 +22,7 @@
 - Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` + `ResolveUsers` on port `5101` (dev) / `8081` (docker).
 - API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
 - Flow: JWT + refresh-token cookie.
-- Swagger (Development): Authorize button with Bearer JWT; paste access token (without `Bearer ` prefix) for `[Authorize]` endpoints like `GET users`.
+- Swagger (Development): Authorize button with Bearer JWT; paste access token (without `Bearer ` prefix) for `[Authorize]` endpoints like `GET users` and `/me`.
 - Session storage: Redis (`Redis:ConnectionString`, prefix `auth:session:`).
 - Health: `GET /health` checks PostgreSQL and Redis (`200` healthy, `503` unhealthy).
 - Docker healthcheck interval: `120s` (`docker-compose.yml` + `Dockerfile`).

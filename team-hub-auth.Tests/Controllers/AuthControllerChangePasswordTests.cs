@@ -114,6 +114,7 @@ public class AuthControllerChangePasswordTests
             passwordHasher,
             new InMemoryLoginAttemptLimiter(),
             new UserQueryService(db),
+            AuthControllerTestHelpers.CreateUserResponseMapper(),
             NullLogger<AuthController>.Instance)
         {
             ControllerContext = new ControllerContext

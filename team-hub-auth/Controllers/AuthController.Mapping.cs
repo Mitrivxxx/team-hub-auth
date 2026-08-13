@@ -5,16 +5,9 @@ namespace team_hub_auth.Controllers;
 
 public partial class AuthController
 {
-    static UserResponse ToResponse(User user) => new()
-    {
-        Id = user.Id,
-        Username = user.Identity.Username,
-        Email = user.Identity.Email,
-        Name = user.Profile.Name,
-        Surname = user.Profile.Surname
-    };
+    UserResponse ToResponse(User user) => userResponseMapper.Map(user);
 
-    static AuthResponse ToAuthResponse(User user, string accessToken, DateTimeOffset accessTokenExpiresAt) => new()
+    AuthResponse ToAuthResponse(User user, string accessToken, DateTimeOffset accessTokenExpiresAt) => new()
     {
         AccessToken = accessToken,
         ExpiresInSeconds = (int)Math.Max(0, (accessTokenExpiresAt - DateTimeOffset.UtcNow).TotalSeconds),

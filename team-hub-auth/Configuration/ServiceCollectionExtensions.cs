@@ -10,11 +10,13 @@ using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using team_hub_auth.Data;
 using TeamHub.Redis;
+using team_hub_auth.Services;
 using team_hub_auth.Services.Password;
 using team_hub_auth.Services.LoginAttempts;
 using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
 using team_hub_auth.Services.Users;
+using TeamHub.BlobStorage;
 using team_hub_auth.Validators;
 using TeamHub.Observability;
 
@@ -109,11 +111,36 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        services.AddHttpContextAccessor();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserQueryService, UserQueryService>();
+        services.AddScoped<IUserResponseMapper, UserResponseMapper>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IMeProfileService, MeProfileService>();
+        services.AddScoped<IUserAvatarService, UserAvatarService>();
         services.AddTeamHubExceptionMapper<RedisUnavailableExceptionMapper>();
+        services.AddTeamHubExceptionMapper<AuthExceptionMapper>();
         services.AddGrpc();
+        return services;
+    }
+
+    public static IServiceCollection AddAuthBlobStorage(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment? environment = null)
+    {
+        var section = configuration.GetSection(BlobStorageOptions.SectionName);
+        var connectionString = configuration.GetConnectionString("blobs")
+            ?? section[nameof(BlobStorageOptions.ConnectionString)];
+
+        if (environment?.IsProduction() == true && string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "BlobStorage:ConnectionString is required in Production (Azure Blob or equivalent).");
+        }
+
+        services.AddTeamHubBlobStorage(configuration);
         return services;
     }
 
