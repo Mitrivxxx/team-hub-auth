@@ -1,18 +1,18 @@
 using team_hub_auth.Seeding.Abstractions;
 using team_hub_auth.Seeding.Users;
 
-namespace team_hub_auth.Seeding.Development;
+namespace team_hub_auth.Seeding;
 
-public sealed class DevelopmentDataSeeder(
+public sealed class DemoDataSeeder(
     ActiveDemoUserSeeder activeUserSeeder,
     BulkDemoUserSeeder bulkUserSeeder,
-    ILogger<DevelopmentDataSeeder> logger) : IEnvironmentDataSeeder
+    ILogger<DemoDataSeeder> logger) : IEnvironmentDataSeeder
 {
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Running Development auth data seed...");
+        logger.LogInformation("Running auth demo data seed...");
         await activeUserSeeder.EnsureAsync(cancellationToken);
         await bulkUserSeeder.SeedAsync(cancellationToken);
-        logger.LogInformation("Development auth data seed finished");
+        logger.LogInformation("Auth demo data seed finished");
     }
 }

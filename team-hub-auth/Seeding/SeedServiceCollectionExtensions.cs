@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using team_hub_auth.Configuration;
 using team_hub_auth.Seeding.Abstractions;
-using team_hub_auth.Seeding.Development;
-using team_hub_auth.Seeding.Staging;
 using team_hub_auth.Seeding.Users;
 
 namespace team_hub_auth.Seeding;
@@ -28,11 +26,7 @@ public static class SeedServiceCollectionExtensions
 
         services.AddScoped<ActiveDemoUserSeeder>();
         services.AddScoped<BulkDemoUserSeeder>();
-
-        if (environment.IsDevelopment())
-            services.AddScoped<IEnvironmentDataSeeder, DevelopmentDataSeeder>();
-        else
-            services.AddScoped<IEnvironmentDataSeeder, StagingDataSeeder>();
+        services.AddScoped<IEnvironmentDataSeeder, DemoDataSeeder>();
 
         return services;
     }

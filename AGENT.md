@@ -15,10 +15,10 @@
   - Config: `Seed` in `appsettings.{Environment}.json` (`UserCount` Development=50, Staging=10 000). Do not log passwords.
   - Active login user: username `JanWilk123`, password `janwilk123` / `Seed:ActivePassword` (Argon2; JWT/refresh on login — not pre-seeded). Email `janwilk123@teamhub.local`.
   - Bulk users (`TeamHub.DemoSeed`): username `Name+Surname+123`, password and email local-part = lowercase username (same rule as active user). Bogus PL/EN names; reserved active username excluded. Collision suffix before `123` when needed.
-  - Layout: `Seeding/Development|Staging/*DataSeeder`, helpers `Seeding/Users/ActiveDemoUserSeeder` + `BulkDemoUserSeeder`. Domain/persistence stay in `Data/`.
+  - Layout: `Seeding/DemoDataSeeder` + helpers `Seeding/Users/ActiveDemoUserSeeder` + `BulkDemoUserSeeder`. Volumes from `appsettings.{Environment}.json` (`UserCount`). Domain/persistence stay in `Data/`.
   - Idempotent: skips active user if username exists; skips bulk when other `@teamhub.local` emails exist.
-  - Seed organization after auth (org resolves users via auth gRPC).
-  - Aspire one-shot: `cd aspire/TeamHub.AppHost && dotnet run -- --seed` (runs this seeder, then org; see `aspire/AGENT.md`).
+  - Seed organization after auth (org resolves users via auth gRPC); Aspire then seeds notification inbox.
+  - Aspire one-shot: `cd aspire/TeamHub.AppHost && dotnet run -- --seed` (`seed-auth` → `seed-auth-api` → `seed-organization` → `seed-notification`; see `aspire/AGENT.md`).
 - Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` + `ResolveUsers` on port `5101` (dev) / `8081` (docker).
 - API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
 - Flow: JWT + refresh-token cookie.
