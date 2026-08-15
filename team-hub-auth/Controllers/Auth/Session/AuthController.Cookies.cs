@@ -1,4 +1,4 @@
-namespace team_hub_auth.Controllers;
+namespace team_hub_auth.Controllers.Auth;
 
 public partial class AuthController
 {

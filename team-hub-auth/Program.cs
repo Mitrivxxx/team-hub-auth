@@ -14,7 +14,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.Host.AddTeamHubSerilog();
 
-builder.Services.AddTeamHubOpenTelemetry(builder.Configuration, "team-hub-auth", includeEntityFrameworkCore: true);
+builder.Services.AddTeamHubOpenTelemetry(
+    builder.Configuration,
+    "team-hub-auth",
+    includeEntityFrameworkCore: true,
+    includeStackExchangeRedis: true);
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddRedisSessionStore(builder.Configuration);
 builder.Services.AddAuthHealthChecks(builder.Configuration);

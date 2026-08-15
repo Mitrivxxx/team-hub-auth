@@ -15,7 +15,10 @@ public sealed class ConfigureSwaggerOptions(IApiVersionDescriptionProvider provi
             options.SwaggerDoc(description.GroupName, new OpenApiInfo
             {
                 Title = "Team Hub Auth API",
-                Version = description.ApiVersion.ToString()
+                Version = description.ApiVersion.ToString(),
+                Description = description.IsDeprecated
+                    ? "This API version has been deprecated."
+                    : null
             });
         }
     }

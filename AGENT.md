@@ -2,15 +2,17 @@
 - Short context for the auth service agent.
 
 ## Source of truth
-- `team-hub-auth/` (`Program.cs`, `Controllers/AuthController*`, `Controllers/MeController.cs`, `Configuration/`, `Seeding/`, `Data/AuthDbContext.cs`, `appsettings*.json`, `.env*`)
+- `team-hub-auth/` (`Program.cs`, `Controllers/Auth/` (`Session/`, `Account/`, `Users/`, `Internal/`), `Controllers/Me/`, `Controllers/AuthApiController.cs`, `Configuration/AuthApiVersions.cs`, `Configuration/`, `Seeding/`, `Data/AuthDbContext.cs`, `appsettings*.json`, `.env*`)
 - `aspire/TeamHub.ServiceDefaults/Extensions.cs`
 
 ## Do
-- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password` (public identity reset), `GET/PATCH /me` (JWT), `POST /me/change-password` (JWT, current + new password), `PUT|DELETE /me/avatar` (JWT), `GET users` (JWT, paginated, optional search), `GET /health`.
-- `GET/PATCH /me`: current user profile; PATCH `{ name?, surname?, email? }` (at least one field); username is read-only; `409` on duplicate email. `UserResponse.avatarUrl` is a SAS URL (nullable).
+- Endpoints: `register`, `login`, `refresh`, `logout`, `change-password` (public identity reset), `GET/PATCH /me` (JWT), `POST /me/change-password` (JWT, current + new password), `PUT|DELETE /me/avatar` (JWT), `GET users` (JWT, paginated search), `GET /health`.
+- `GET/PATCH /me`: current user profile; PATCH `{ name?, surname?, email? }` (at least one field); username is read-only; `409` on duplicate email. Email change revokes all refresh sessions and clears refresh cookies (client must re-login). `UserResponse.avatarUrl` is a SAS URL (nullable).
+- `POST /change-password` and `POST /me/change-password`: after success, revoke all Redis refresh sessions for that user and clear refresh cookies.
 - `PUT|DELETE /me/avatar`: JPEG/PNG/WebP, max 2 MB; blob path `users/{userId}/avatar.{ext}`; `503` when blob storage is not configured. Production requires `BlobStorage:ConnectionString`.
-- `GET users?page=&pageSize=&q=`: defaults `page=1`, `pageSize=50`; `pageSize` clamped to max `100`. Optional `q` filters by case-insensitive substring on `Name`, `Surname`, or `Email`; multi-word `q` (e.g. `Jan Kowalski`) requires each token to match across those fields.
+- `GET users?page=&pageSize=&q=`: defaults `page=1`, `pageSize=50`; `pageSize` clamped to max `100`. Requires `q` with min length `2` (shorter/empty → `[]`). Filters by case-insensitive substring on `Name`, `Surname`, or `Username`; multi-word `q` (e.g. `Jan Kowalski`) requires each token to match across those fields. List response omits email (`email` empty string).
 - Indexes on `users`: unique `Username`, unique filtered `Email`, `Name`, `Surname` (search), unique `RefreshTokenHash`.
+- JWT access token claims: `sub`, `unique_name` / `ClaimTypes.Name`, `email` (`JwtRegisteredClaimNames.Email` + `ClaimTypes.Email`) for org invitation matching.
 - Demo seed (`Seeding/`): run with `--seed` when `ASPNETCORE_ENVIRONMENT` is `Development` or `Staging` and `Seed:Enabled=true` (migrates, seeds, exits without hosting API). Production is blocked.
   - Config: `Seed` in `appsettings.{Environment}.json` (`UserCount` Development=50, Staging=10 000). Do not log passwords.
   - Active login user: username `JanWilk123`, password `janwilk123` / `Seed:ActivePassword` (Argon2; JWT/refresh on login — not pre-seeded). Email `janwilk123@teamhub.local`.
@@ -20,16 +22,16 @@
   - Seed organization after auth (org resolves users via auth gRPC); Aspire then seeds notification inbox.
   - Aspire one-shot: `cd aspire/TeamHub.AppHost && dotnet run -- --seed` (`seed-auth` → `seed-auth-api` → `seed-organization` → `seed-notification`; see `aspire/AGENT.md`).
 - Internal gRPC (not via gateway): `UserProfileService.GetUsersByIds` + `ResolveUsers` on port `5101` (dev) / `8081` (docker).
-- API versioning: URL segment (`/api/auth/v0.0/*`), default version `0.0` (`Asp.Versioning.Mvc` 8.1.0).
+- API versioning: URL path `/api/auth/v1/*` (contract `1.0`; major only in URL). Source of truth: `Configuration/AuthApiVersions.cs` + `Controllers/AuthApiController` base (`Asp.Versioning.Mvc` / `ApiExplorer` 8.1.0). Swagger docs from `IApiVersionDescriptionProvider`. Additive changes stay on `v1`; breaking change adds `v2` beside deprecated `v1`.
 - Flow: JWT + refresh-token cookie.
 - Swagger (Development): Authorize button with Bearer JWT; paste access token (without `Bearer ` prefix) for `[Authorize]` endpoints like `GET users` and `/me`.
-- Session storage: Redis (`Redis:ConnectionString`, prefix `auth:session:`).
+- Session storage: Redis (`Redis:ConnectionString`, prefix `auth:session:{hash}` + user index `auth:user-sessions:{userId}`). `RevokeAllSessionsAsync` deletes all sessions for a user.
 - Health: `GET /health` checks PostgreSQL and Redis (`200` healthy, `503` unhealthy).
 - Docker healthcheck interval: `120s` (`docker-compose.yml` + `Dockerfile`).
 - Kestrel: REST/health on `8080` (Http1AndHttp2), gRPC on `8081` (Http2 only).
 - Shared contracts: `building-blocks/TeamHub.GrpcContracts` (`Protos/auth/v1/user_profile.proto`).
 - Exclude `/health` and `/metrics` from Serilog request logging (`UseSerilogRequestLoggingExcludingHealth` from `TeamHub.Observability`).
-- Observability via `TeamHub.Observability`: OTLP traces/logs, Prometheus `/metrics`, EF Core tracing, shared Exception/CorrelationId/UserIdLogging middleware.
+- Observability via `TeamHub.Observability`: OTLP traces/logs (dev localhost collector + prod `mon-otel`), Prometheus `/metrics`, EF Core + Redis tracing, custom meters `auth.login.failures` / `auth.login.lockouts` / `auth.registrations`, shared Exception/CorrelationId/SessionId/UserIdLogging middleware.
 - Keep `UseTeamHubExceptionHandling` as the first middleware (global try/catch; Serilog `Error` with stack trace; RFC 9457 `ProblemDetails`).
 - Register `AddTeamHubProblemDetails()` for ModelState / FluentValidation `ValidationProblemDetails`.
 - Return `application/problem+json` with stable `type` URIs (`https://teamhub.dev/problems/...`), `correlationId` (and `sessionId` when present).
@@ -53,7 +55,7 @@
 - Prod Env (Docker): Host port 5001 (REST). Internal gRPC `8081`. Postgres (container `db-postgres`, db `authdb`). Redis (`cache-redis:6379`). Container `srv-auth-prod`. Connection string in auth `.env` (`ConnectionStrings__DefaultConnection`); compose also sets `Redis__ConnectionString=cache-redis:6379`.
 - Integration tests: `team-hub-auth.Tests/Integration` (requires Docker; Testcontainers Redis and PostgreSQL).
 - Keep `UseTeamHubCorrelationId` before authentication (`X-Correlation-ID` = OpenTelemetry `TraceId`; echo on response).
-- Keep `SessionIdMiddleware` after CorrelationId (header `X-Session-ID`; fallback `Guid` when missing; echo in response).
+- Keep `UseTeamHubSessionId` after CorrelationId (header `X-Session-ID`; fallback `Guid` when missing; echo in response).
 - Keep `UseTeamHubUserIdLogging` after `UseAuthentication` / `UseAuthorization` (JWT `sub` or `NameIdentifier` → `LogContext.UserId`).
 - Keep `UseSerilogRequestLoggingExcludingHealth` after UserIdLogging so request logs include `TraceId`, `SpanId`, `CorrelationId`, `SessionId`, and `UserId`.
 - Dev log template: `[{Level:u3}] [{TraceId}] [{SpanId}] [{CorrelationId}] [{SessionId}] [{UserId}] ...` (no `{Timestamp}` — Loki adds its own).

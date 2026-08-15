@@ -1,7 +1,7 @@
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 
-namespace team_hub_auth.Controllers;
+namespace team_hub_auth.Controllers.Auth;
 
 public partial class AuthController
 {

@@ -65,4 +65,25 @@ public sealed class RedisSessionStoreIntegrationTests(RedisIntegrationFixture fi
         var revokedSession = await sessionStore.GetRefreshSessionAsync(refreshTokenHash);
         Assert.Null(revokedSession);
     }
+
+    [Fact]
+    public async Task RedisSessionStore_ShouldRevokeAllSessionsForUser()
+    {
+        await using var multiplexer = await ConnectionMultiplexer.ConnectAsync(fixture.ConnectionString);
+        var sessionStore = new RedisSessionStore(multiplexer, NullLogger<RedisSessionStore>.Instance);
+
+        var userA = Guid.NewGuid();
+        var userB = Guid.NewGuid();
+        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(5);
+
+        await sessionStore.StoreRefreshSessionAsync("revoke-all-a1", userA, rememberMe: true, expiresAt);
+        await sessionStore.StoreRefreshSessionAsync("revoke-all-a2", userA, rememberMe: false, expiresAt);
+        await sessionStore.StoreRefreshSessionAsync("revoke-all-b1", userB, rememberMe: true, expiresAt);
+
+        await sessionStore.RevokeAllSessionsAsync(userA);
+
+        Assert.Null(await sessionStore.GetRefreshSessionAsync("revoke-all-a1"));
+        Assert.Null(await sessionStore.GetRefreshSessionAsync("revoke-all-a2"));
+        Assert.NotNull(await sessionStore.GetRefreshSessionAsync("revoke-all-b1"));
+    }
 }

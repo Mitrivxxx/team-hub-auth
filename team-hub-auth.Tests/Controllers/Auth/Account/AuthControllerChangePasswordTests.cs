@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using team_hub_auth.Controllers;
+using team_hub_auth.Controllers.Auth;
 using team_hub_auth.Data;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
@@ -12,7 +12,7 @@ using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
 using team_hub_auth.Services.Users;
 
-namespace team_hub_auth.Tests.Controllers;
+namespace team_hub_auth.Tests.Controllers.Auth;
 
 public class AuthControllerChangePasswordTests
 {
@@ -201,6 +201,10 @@ public class AuthControllerChangePasswordTests
 
         public Task RevokeRefreshSessionAsync(
             string refreshTokenHash,
+            CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task RevokeAllSessionsAsync(
+            Guid userId,
             CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

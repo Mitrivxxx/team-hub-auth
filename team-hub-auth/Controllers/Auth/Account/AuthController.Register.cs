@@ -4,8 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using TeamHub.Observability;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
+using team_hub_auth.Observability;
 
-namespace team_hub_auth.Controllers;
+namespace team_hub_auth.Controllers.Auth;
 
 public partial class AuthController
 {
@@ -80,6 +81,7 @@ public partial class AuthController
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
+        AuthMetrics.RecordRegistration();
         logger.LogInformation(
             "User {UserId} registered successfully with username {Username}",
             user.Id,

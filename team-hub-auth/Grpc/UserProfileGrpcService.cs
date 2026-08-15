@@ -4,18 +4,25 @@ using team_hub_auth.Services.Users;
 
 namespace team_hub_auth.Grpc;
 
-public sealed class UserProfileGrpcService(IUserQueryService userQueryService) : UserProfileService.UserProfileServiceBase
+public sealed class UserProfileGrpcService(
+    IUserQueryService userQueryService,
+    ILogger<UserProfileGrpcService> logger) : UserProfileService.UserProfileServiceBase
 {
     /// <summary>Return user profiles for the given ids.</summary>
     public override async Task<GetUsersByIdsResponse> GetUsersByIds(
         GetUsersByIdsRequest request,
         ServerCallContext context)
     {
+        logger.LogInformation("gRPC GetUsersByIds for {UserIdCount} ids", request.UserIds.Count);
+
         var ids = new List<Guid>(request.UserIds.Count);
         foreach (var rawId in request.UserIds)
         {
             if (!Guid.TryParse(rawId, out var userId))
+            {
+                logger.LogWarning("gRPC GetUsersByIds rejected invalid user id {UserId}", rawId);
                 throw new RpcException(new Status(StatusCode.InvalidArgument, $"Invalid user id: {rawId}"));
+            }
 
             ids.Add(userId);
         }
@@ -32,6 +39,7 @@ public sealed class UserProfileGrpcService(IUserQueryService userQueryService) :
             Surname = u.Surname
         }));
 
+        logger.LogInformation("gRPC GetUsersByIds returned {UserCount} profiles", response.Users.Count);
         return response;
     }
 
@@ -40,6 +48,11 @@ public sealed class UserProfileGrpcService(IUserQueryService userQueryService) :
         ResolveUsersRequest request,
         ServerCallContext context)
     {
+        logger.LogInformation(
+            "gRPC ResolveUsers emails={EmailCount} usernames={UsernameCount}",
+            request.Emails.Count,
+            request.Usernames.Count);
+
         var result = await userQueryService.ResolveUsersAsync(
             request.Emails.ToList(),
             request.Usernames.ToList(),
@@ -56,6 +69,12 @@ public sealed class UserProfileGrpcService(IUserQueryService userQueryService) :
         }));
         response.UnresolvedEmails.AddRange(result.UnresolvedEmails);
         response.UnresolvedUsernames.AddRange(result.UnresolvedUsernames);
+
+        logger.LogInformation(
+            "gRPC ResolveUsers returned {UserCount} profiles ({UnresolvedEmailCount} unresolved emails, {UnresolvedUsernameCount} unresolved usernames)",
+            response.Users.Count,
+            response.UnresolvedEmails.Count,
+            response.UnresolvedUsernames.Count);
         return response;
     }
 }

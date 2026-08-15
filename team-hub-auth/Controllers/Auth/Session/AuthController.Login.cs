@@ -4,8 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using TeamHub.Observability;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
+using team_hub_auth.Observability;
 
-namespace team_hub_auth.Controllers;
+namespace team_hub_auth.Controllers.Auth;
 
 public partial class AuthController
 {
@@ -21,6 +22,7 @@ public partial class AuthController
         var lockoutStatus = await loginAttemptLimiter.GetLockoutStatusAsync(loweredUsername);
         if (lockoutStatus.IsLocked)
         {
+            AuthMetrics.RecordLoginLockout();
             logger.LogWarning("Login blocked for username {Username} due to active lockout", username);
             return LoginProblem(
                 StatusCodes.Status423Locked,
@@ -43,10 +45,12 @@ public partial class AuthController
                 MaxFailedLoginAttempts,
                 LockoutDuration);
 
+            AuthMetrics.RecordLoginFailure();
             logger.LogWarning("Login failed for username {Username} (remainingAttempts: {RemainingAttempts})", username, failureOutcome.RemainingAttempts);
 
             if (failureOutcome.IsLocked)
             {
+                AuthMetrics.RecordLoginLockout();
                 return LoginProblem(
                     StatusCodes.Status423Locked,
                     ProblemTypes.For("account-locked"),

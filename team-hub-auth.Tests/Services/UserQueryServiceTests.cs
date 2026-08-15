@@ -70,65 +70,31 @@ public class UserQueryServiceTests
     }
 
     [Fact]
-    public async Task GetAllUsersAsync_ReturnsAllProfilesOrderedByUsername()
+    public async Task GetAllUsersAsync_WithoutQuery_ReturnsEmpty()
     {
         await using var db = CreateDb();
         db.Users.AddRange(
-            new User
-            {
-                Id = Guid.NewGuid(),
-                Identity = new UserIdentity
-                {
-                    Username = "zoe",
-                    Email = ""
-                },
-                Profile = new UserProfile
-                {
-                    Name = "Zoe",
-                    Surname = "Zed"
-                },
-                Credentials = new UserCredentials
-                {
-                    PasswordHash = "hash"
-                }
-            },
-            new User
-            {
-                Id = Guid.NewGuid(),
-                Identity = new UserIdentity
-                {
-                    Username = "amy",
-                    Email = ""
-                },
-                Profile = new UserProfile
-                {
-                    Name = "Amy",
-                    Surname = "Ace"
-                },
-                Credentials = new UserCredentials
-                {
-                    PasswordHash = "hash"
-                }
-            });
+            CreateUser("zoe", "Zoe", "Zed"),
+            CreateUser("amy", "Amy", "Ace"));
         await db.SaveChangesAsync();
 
         var service = new UserQueryService(db);
         var result = await service.GetAllUsersAsync();
 
-        Assert.Equal(2, result.Count);
-        Assert.Equal("amy", result[0].Username);
-        Assert.Equal("zoe", result[1].Username);
+        Assert.Empty(result);
     }
 
     [Fact]
-    public async Task GetAllUsersAsync_WhenEmpty_ReturnsEmpty()
+    public async Task GetAllUsersAsync_WithShortQuery_ReturnsEmpty()
     {
         await using var db = CreateDb();
+        db.Users.Add(CreateUser("amy", "Amy", "Ace"));
+        await db.SaveChangesAsync();
+
         var service = new UserQueryService(db);
 
-        var result = await service.GetAllUsersAsync();
-
-        Assert.Empty(result);
+        Assert.Empty(await service.GetAllUsersAsync(q: "a"));
+        Assert.Empty(await service.GetAllUsersAsync(q: " "));
     }
 
     [Fact]
@@ -143,35 +109,17 @@ public class UserQueryServiceTests
 
         var service = new UserQueryService(db);
 
-        var page1 = await service.GetAllUsersAsync(page: 1, pageSize: 2);
-        var page2 = await service.GetAllUsersAsync(page: 2, pageSize: 2);
+        var page1 = await service.GetAllUsersAsync(page: 1, pageSize: 2, q: "e");
+        // single-char q is rejected
+        Assert.Empty(page1);
 
-        Assert.Equal(2, page1.Count);
-        Assert.Equal("amy", page1[0].Username);
-        Assert.Equal("bob", page1[1].Username);
-        Assert.Single(page2);
-        Assert.Equal("zoe", page2[0].Username);
+        var byAmy = await service.GetAllUsersAsync(page: 1, pageSize: 2, q: "am");
+        Assert.Single(byAmy);
+        Assert.Equal("amy", byAmy[0].Username);
     }
 
     [Fact]
-    public async Task GetAllUsersAsync_ClampsInvalidPageAndPageSize()
-    {
-        await using var db = CreateDb();
-        db.Users.AddRange(
-            CreateUser("amy", "Amy", "Ace"),
-            CreateUser("bob", "Bob", "Bee"));
-        await db.SaveChangesAsync();
-
-        var service = new UserQueryService(db);
-
-        var result = await service.GetAllUsersAsync(page: 0, pageSize: 0);
-
-        Assert.Equal(2, result.Count);
-        Assert.Equal("amy", result[0].Username);
-    }
-
-    [Fact]
-    public async Task GetAllUsersAsync_WithQuery_MatchesNameSurnameOrEmail()
+    public async Task GetAllUsersAsync_WithQuery_MatchesNameSurnameOrUsername_OmitsEmail()
     {
         await using var db = CreateDb();
         db.Users.AddRange(
@@ -184,14 +132,17 @@ public class UserQueryServiceTests
 
         var byName = await service.GetAllUsersAsync(q: "amy");
         var bySurname = await service.GetAllUsersAsync(q: "WILK");
+        var byUsername = await service.GetAllUsersAsync(q: "bob");
         var byEmail = await service.GetAllUsersAsync(q: "bob@example");
 
         Assert.Single(byName);
         Assert.Equal("amy", byName[0].Username);
+        Assert.Equal("", byName[0].Email);
         Assert.Single(bySurname);
         Assert.Equal("zoe", bySurname[0].Username);
-        Assert.Single(byEmail);
-        Assert.Equal("bob", byEmail[0].Username);
+        Assert.Single(byUsername);
+        Assert.Equal("bob", byUsername[0].Username);
+        Assert.Empty(byEmail);
     }
 
     [Fact]
@@ -211,24 +162,9 @@ public class UserQueryServiceTests
 
         Assert.Single(byFullName);
         Assert.Equal("jan", byFullName[0].Username);
+        Assert.Equal("", byFullName[0].Email);
         Assert.Single(byReversed);
         Assert.Equal("jan", byReversed[0].Username);
-    }
-
-    [Fact]
-    public async Task GetAllUsersAsync_WithWhitespaceQuery_ReturnsAll()
-    {
-        await using var db = CreateDb();
-        db.Users.AddRange(
-            CreateUser("amy", "Amy", "Ace"),
-            CreateUser("bob", "Bob", "Bee"));
-        await db.SaveChangesAsync();
-
-        var service = new UserQueryService(db);
-
-        var result = await service.GetAllUsersAsync(q: "   ");
-
-        Assert.Equal(2, result.Count);
     }
 
     [Fact]

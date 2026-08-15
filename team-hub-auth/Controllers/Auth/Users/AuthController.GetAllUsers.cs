@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using team_hub_auth.Dtos;
 
-namespace team_hub_auth.Controllers;
+namespace team_hub_auth.Controllers.Auth;
 
 public partial class AuthController
 {
-    /// <summary>List users (paginated), optional search by name, surname, or email.</summary>
+    /// <summary>Search users by name, surname, or username (requires q, min 2 chars).</summary>
     [Authorize]
     [HttpGet("users")]
     [ProducesResponseType(typeof(IReadOnlyList<UserResponse>), StatusCodes.Status200OK)]

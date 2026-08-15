@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 using TeamHub.BlobStorage;
 using team_hub_auth.Configuration;
 using team_hub_auth.Tests.Configuration;
-using team_hub_auth.Controllers;
+using team_hub_auth.Controllers.Auth;
 using team_hub_auth.Data;
 using team_hub_auth.Models;
 using team_hub_auth.Services.LoginAttempts;
@@ -17,7 +17,7 @@ using team_hub_auth.Services.Sessions;
 using team_hub_auth.Services.Tokens;
 using team_hub_auth.Services.Users;
 
-namespace team_hub_auth.Tests.Controllers;
+namespace team_hub_auth.Tests.Controllers.Auth;
 
 internal static class AuthControllerTestHelpers
 {

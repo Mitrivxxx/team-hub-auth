@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddTeamHubProblemDetails();
         services.AddApiVersioning(options =>
             {
-                options.DefaultApiVersion = new ApiVersion(0, 0);
+                options.DefaultApiVersion = new ApiVersion(1, 0);
                 options.AssumeDefaultVersionWhenUnspecified = true;
                 options.ReportApiVersions = true;
                 options.ApiVersionReader = new UrlSegmentApiVersionReader();
@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
             .AddMvc()
             .AddApiExplorer(options =>
             {
-                options.GroupNameFormat = "'v'VVV";
+                options.GroupNameFormat = "'v'V";
                 options.SubstituteApiVersionInUrl = true;
             });
         services.AddEndpointsApiExplorer();

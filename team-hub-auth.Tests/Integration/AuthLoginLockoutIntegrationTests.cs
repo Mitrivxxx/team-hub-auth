@@ -7,7 +7,7 @@ using Xunit;
 using team_hub_auth.Dtos;
 using team_hub_auth.Data;
 using team_hub_auth.Models;
-using team_hub_auth.Tests.Controllers;
+using team_hub_auth.Tests.Controllers.Auth;
 using TeamHub.Observability;
 
 namespace team_hub_auth.Tests.Integration;
@@ -33,7 +33,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
         for (var i = 1; i <= 4; i++)
         {
-            var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
+            var response = await client.PostAsJsonAsync("/api/auth/v1/login", new LoginRequest
             {
                 Username = username,
                 Password = "wrong-password",
@@ -71,7 +71,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
         for (var i = 1; i <= 5; i++)
         {
-            var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
+            var response = await client.PostAsJsonAsync("/api/auth/v1/login", new LoginRequest
             {
                 Username = username,
                 Password = "wrong-password",
@@ -129,7 +129,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
         for (var i = 1; i <= 5; i++)
         {
-            var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
+            var response = await client.PostAsJsonAsync("/api/auth/v1/login", new LoginRequest
             {
                 Username = username,
                 Password = "wrong-password",
@@ -138,7 +138,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
             Assert.NotNull(response);
         }
 
-        var lockedResponse = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
+        var lockedResponse = await client.PostAsJsonAsync("/api/auth/v1/login", new LoginRequest
         {
             Username = username,
             Password = "secret123456",
@@ -149,7 +149,7 @@ public sealed class AuthLoginLockoutIntegrationTests(HealthIntegrationFixture fi
 
         await ClearRedisKeysAsync(factory, username);
 
-        var okResponse = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
+        var okResponse = await client.PostAsJsonAsync("/api/auth/v1/login", new LoginRequest
         {
             Username = username,
             Password = "secret123456",

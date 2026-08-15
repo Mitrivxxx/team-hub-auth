@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using TeamHub.Observability.Middleware;
 using Xunit;
@@ -91,5 +92,27 @@ public sealed class CorrelationIdMiddlewareTests
 
         Assert.Equal(correlationId, context.Request.Headers[CorrelationIdMiddleware.HeaderName].ToString());
         Assert.Equal(correlationId, context.Items[CorrelationIdMiddleware.ItemKey]);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_PrefersActiveTraceId_OverIncomingHeader()
+    {
+        const string incomingHeader = "client-uuid";
+        using var activity = new Activity("correlation-test");
+        activity.Start();
+
+        var context = new DefaultHttpContext();
+        context.Request.Headers[CorrelationIdMiddleware.HeaderName] = incomingHeader;
+
+        var middleware = new CorrelationIdMiddleware(async httpContext =>
+        {
+            await httpContext.Response.WriteAsync("ok");
+        });
+        await middleware.InvokeAsync(context);
+
+        var expected = activity.TraceId.ToString();
+        Assert.Equal(expected, context.Request.Headers[CorrelationIdMiddleware.HeaderName].ToString());
+        Assert.Equal(expected, context.Items[CorrelationIdMiddleware.ItemKey]);
+        Assert.Equal(expected, context.Response.Headers[CorrelationIdMiddleware.HeaderName].ToString());
     }
 }

@@ -16,4 +16,8 @@ public interface ISessionStore
     Task RevokeRefreshSessionAsync(
         string refreshTokenHash,
         CancellationToken cancellationToken = default);
+
+    Task RevokeAllSessionsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
 }

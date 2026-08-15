@@ -2,51 +2,29 @@ using Microsoft.AspNetCore.Mvc;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 
-namespace team_hub_auth.Tests.Controllers;
+namespace team_hub_auth.Tests.Controllers.Auth;
 
 public class AuthControllerGetAllUsersTests
 {
     [Fact]
-    public async Task GetAllUsers_WhenUsersExist_ShouldReturnOrderedProfiles()
+    public async Task GetAllUsers_WithoutQuery_ShouldReturnEmptyList()
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
-        var bob = new User
-        {
-            Id = Guid.NewGuid(),
-            Identity = new UserIdentity
+        db.Users.AddRange(
+            new User
             {
-                Username = "bob",
-                Email = ""
+                Id = Guid.NewGuid(),
+                Identity = new UserIdentity { Username = "bob", Email = "" },
+                Profile = new UserProfile { Name = "Bob", Surname = "Jones" },
+                Credentials = new UserCredentials { PasswordHash = "hash" }
             },
-            Profile = new UserProfile
+            new User
             {
-                Name = "Bob",
-                Surname = "Jones"
-            },
-            Credentials = new UserCredentials
-            {
-                PasswordHash = "hash"
-            }
-        };
-        var alice = new User
-        {
-            Id = Guid.NewGuid(),
-            Identity = new UserIdentity
-            {
-                Username = "alice",
-                Email = ""
-            },
-            Profile = new UserProfile
-            {
-                Name = "Alice",
-                Surname = "Smith"
-            },
-            Credentials = new UserCredentials
-            {
-                PasswordHash = "hash"
-            }
-        };
-        db.Users.AddRange(bob, alice);
+                Id = Guid.NewGuid(),
+                Identity = new UserIdentity { Username = "alice", Email = "" },
+                Profile = new UserProfile { Name = "Alice", Surname = "Smith" },
+                Credentials = new UserCredentials { PasswordHash = "hash" }
+            });
         await db.SaveChangesAsync();
 
         var controller = AuthControllerTestHelpers.CreateController(db);
@@ -55,10 +33,7 @@ public class AuthControllerGetAllUsersTests
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var users = Assert.IsAssignableFrom<IReadOnlyList<UserResponse>>(ok.Value);
-        Assert.Equal(2, users.Count);
-        Assert.Equal("alice", users[0].Username);
-        Assert.Equal("bob", users[1].Username);
-        Assert.All(users, u => Assert.False(string.IsNullOrWhiteSpace(u.Id.ToString())));
+        Assert.Empty(users);
     }
 
     [Fact]
@@ -75,7 +50,7 @@ public class AuthControllerGetAllUsersTests
     }
 
     [Fact]
-    public async Task GetAllUsers_WithQuery_ShouldReturnMatchingUsers()
+    public async Task GetAllUsers_WithQuery_ShouldReturnMatchingUsersWithoutEmail()
     {
         await using var db = AuthControllerTestHelpers.CreateDbContext();
         db.Users.AddRange(
@@ -103,5 +78,6 @@ public class AuthControllerGetAllUsersTests
         var users = Assert.IsAssignableFrom<IReadOnlyList<UserResponse>>(ok.Value);
         Assert.Single(users);
         Assert.Equal("alice", users[0].Username);
+        Assert.Equal("", users[0].Email);
     }
 }

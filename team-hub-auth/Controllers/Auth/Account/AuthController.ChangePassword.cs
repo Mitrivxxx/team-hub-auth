@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TeamHub.Observability;
 using team_hub_auth.Dtos;
 
-namespace team_hub_auth.Controllers;
+namespace team_hub_auth.Controllers.Auth;
 
 public partial class AuthController
 {
@@ -42,6 +42,8 @@ public partial class AuthController
         user.Security.FailedLoginAttempts = 0;
         user.Security.LockoutUntil = null;
         await db.SaveChangesAsync();
+        await sessionStore.RevokeAllSessionsAsync(user.Id);
+        DeleteRefreshTokenCookie();
 
         logger.LogInformation("User {UserId} changed password successfully", user.Id);
 

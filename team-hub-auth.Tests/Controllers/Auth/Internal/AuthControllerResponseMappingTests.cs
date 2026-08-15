@@ -4,7 +4,7 @@ using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Tokens;
 
-namespace team_hub_auth.Tests.Controllers;
+namespace team_hub_auth.Tests.Controllers.Auth;
 
 public class AuthControllerResponseMappingTests
 {

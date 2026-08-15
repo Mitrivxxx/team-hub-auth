@@ -4,7 +4,7 @@ using TeamHub.BlobStorage;
 using team_hub_auth.Exceptions;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Users;
-using team_hub_auth.Tests.Controllers;
+using team_hub_auth.Tests.Controllers.Auth;
 
 namespace team_hub_auth.Tests.Services;
 

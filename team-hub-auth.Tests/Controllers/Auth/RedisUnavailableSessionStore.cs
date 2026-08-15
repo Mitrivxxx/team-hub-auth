@@ -2,7 +2,7 @@ using StackExchange.Redis;
 using team_hub_auth.Exceptions;
 using team_hub_auth.Services.Sessions;
 
-namespace team_hub_auth.Tests.Controllers;
+namespace team_hub_auth.Tests.Controllers.Auth;
 
 internal sealed class RedisUnavailableSessionStore : ISessionStore
 {
@@ -27,5 +27,10 @@ internal sealed class RedisUnavailableSessionStore : ISessionStore
     public Task RevokeRefreshSessionAsync(
         string refreshTokenHash,
         CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
+        throw CreateException();
+
+    public Task RevokeAllSessionsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default) =>
+        throw CreateException();
 }

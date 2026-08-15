@@ -6,7 +6,7 @@ using team_hub_auth.Data;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Sessions;
-using team_hub_auth.Tests.Controllers;
+using team_hub_auth.Tests.Controllers.Auth;
 using Xunit;
 
 namespace team_hub_auth.Tests.Integration;
@@ -25,7 +25,7 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
         await SeedUserAsync(factory);
 
         using var client = factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/auth/v0.0/login", new LoginRequest
+        var response = await client.PostAsJsonAsync("/api/auth/v1/login", new LoginRequest
         {
             Username = "john",
             Password = "secret123456",
@@ -51,7 +51,7 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("Cookie", "refreshToken=test-token");
 
-        var response = await client.PostAsync("/api/auth/v0.0/refresh", null);
+        var response = await client.PostAsync("/api/auth/v1/refresh", null);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
 
@@ -59,6 +59,27 @@ public sealed class AuthRedisUnavailableIntegrationTests(HealthIntegrationFixtur
         Assert.Equal(
             "Authentication service temporarily unavailable. Please try again later.",
             body.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Logout_WhenRedisIsUnavailable_ShouldReturnServiceUnavailable()
+    {
+        await using var factory = new TestAuthWebApplicationFactory(
+            fixture.PostgresConnectionString,
+            fixture.RedisConnectionString,
+            services => services.AddSingleton<ISessionStore, RedisUnavailableSessionStore>());
+
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("Cookie", "refreshToken=test-token");
+
+        var response = await client.PostAsync("/api/auth/v1/logout", null);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+
+        var logoutBody = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(
+            "Authentication service temporarily unavailable. Please try again later.",
+            logoutBody.GetProperty("detail").GetString());
     }
 
     static async Task SeedUserAsync(TestAuthWebApplicationFactory factory)

@@ -24,7 +24,9 @@ public class TokenService(IOptions<JwtOptions> jwtOptionsAccessor) : ITokenServi
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.UniqueName, user.Identity.Username),
-            new(ClaimTypes.Name, user.Identity.Username)
+            new(ClaimTypes.Name, user.Identity.Username),
+            new(JwtRegisteredClaimNames.Email, user.Identity.Email),
+            new(ClaimTypes.Email, user.Identity.Email)
         };
 
         var credentials = new SigningCredentials(

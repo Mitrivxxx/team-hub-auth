@@ -6,14 +6,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using TeamHub.Observability;
-using team_hub_auth.Controllers;
+using team_hub_auth.Controllers.Me;
 using team_hub_auth.Data;
+using team_hub_auth.Tests.Controllers.Auth;
 using team_hub_auth.Dtos;
 using team_hub_auth.Models;
 using team_hub_auth.Services;
 using team_hub_auth.Services.Users;
 
-namespace team_hub_auth.Tests.Controllers;
+namespace team_hub_auth.Tests.Controllers.Me;
 
 public class MeControllerTests
 {
@@ -106,7 +107,13 @@ public class MeControllerTests
         await using var db = AuthControllerTestHelpers.CreateDbContext();
         var user = AddUser(db, "alice", "alice@example.com", "Alice", "Smith", "secret123");
         await db.SaveChangesAsync();
-        var controller = CreateController(db, user.Id);
+        var sessionStore = new team_hub_auth.Services.Sessions.InMemorySessionStore();
+        await sessionStore.StoreRefreshSessionAsync(
+            "hash-1",
+            user.Id,
+            rememberMe: true,
+            DateTimeOffset.UtcNow.AddHours(1));
+        var controller = CreateController(db, user.Id, sessionStore);
 
         var result = await controller.ChangeMyPassword(new ChangeMyPasswordRequest
         {
@@ -116,6 +123,29 @@ public class MeControllerTests
 
         Assert.IsType<NoContentResult>(result);
         Assert.True(AuthControllerTestHelpers.PasswordHasher.Verify("newsecret1", user.Credentials.PasswordHash));
+        Assert.Null(await sessionStore.GetRefreshSessionAsync("hash-1"));
+    }
+
+    [Fact]
+    public async Task UpdateMe_WhenEmailChanges_RevokesSessions()
+    {
+        await using var db = AuthControllerTestHelpers.CreateDbContext();
+        var user = AddUser(db, "alice", "alice@example.com", "Alice", "Smith");
+        await db.SaveChangesAsync();
+        var sessionStore = new team_hub_auth.Services.Sessions.InMemorySessionStore();
+        await sessionStore.StoreRefreshSessionAsync(
+            "hash-1",
+            user.Id,
+            rememberMe: true,
+            DateTimeOffset.UtcNow.AddHours(1));
+        var controller = CreateController(db, user.Id, sessionStore);
+
+        var result = await controller.UpdateMe(new UpdateMeRequest { Email = "alice2@example.com" });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = Assert.IsType<UserResponse>(ok.Value);
+        Assert.Equal("alice2@example.com", body.Email);
+        Assert.Null(await sessionStore.GetRefreshSessionAsync("hash-1"));
     }
 
     static User AddUser(
@@ -140,10 +170,14 @@ public class MeControllerTests
         return user;
     }
 
-    static MeController CreateController(AuthDbContext db, Guid? userId)
+    static MeController CreateController(
+        AuthDbContext db,
+        Guid? userId,
+        team_hub_auth.Services.Sessions.ISessionStore? sessionStore = null)
     {
         var mapper = AuthControllerTestHelpers.CreateUserResponseMapper();
-        var profileService = new MeProfileService(db, AuthControllerTestHelpers.PasswordHasher, mapper);
+        sessionStore ??= new team_hub_auth.Services.Sessions.InMemorySessionStore();
+        var profileService = new MeProfileService(db, AuthControllerTestHelpers.PasswordHasher, mapper, sessionStore);
         var avatarService = new UserAvatarService(db, mapper, new ServiceCollection().BuildServiceProvider());
 
         var services = new ServiceCollection();

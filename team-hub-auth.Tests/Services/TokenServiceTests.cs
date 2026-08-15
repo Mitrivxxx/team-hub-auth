@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using team_hub_auth.Models;
 using team_hub_auth.Services.Tokens;
 using team_hub_auth.Tests.Configuration;
@@ -25,7 +26,7 @@ public class TokenServiceTests
             Identity = new UserIdentity
             {
                 Username = "john_doe",
-                Email = ""
+                Email = "john@example.com"
             }
         };
 
@@ -39,6 +40,10 @@ public class TokenServiceTests
         Assert.Equal("TeamHubTestsAudience", jwt.Audiences.Single());
         Assert.Contains(jwt.Claims, c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == user.Id.ToString());
         Assert.Contains(jwt.Claims, c => c.Type == JwtRegisteredClaimNames.UniqueName && c.Value == user.Identity.Username);
+        Assert.Contains(
+            jwt.Claims,
+            c => (c.Type == JwtRegisteredClaimNames.Email || c.Type == ClaimTypes.Email || c.Type == "email")
+                 && c.Value == user.Identity.Email);
         Assert.InRange(expiresAt, before.AddMinutes(15).AddSeconds(-2), after.AddMinutes(15).AddSeconds(2));
     }
 
