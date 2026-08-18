@@ -1,0 +1,40 @@
+# team-hub-auth
+
+## Purpose
+- Authentication and profile service for Team Hub.
+
+## Scope
+- REST API for register, login, refresh, logout, password changes, and current user profile (`/me`).
+- Internal gRPC profile lookup for other services.
+- Session handling with JWT + refresh cookies and Redis-backed session revocation.
+
+## Runtime and ports
+- Local dev (manual): REST `http://localhost:5001`, gRPC `http://localhost:5101`.
+- Docker/runtime: REST `8080`, gRPC `8081` (host mapping typically `5001 -> 8080`).
+- Health endpoint: `GET /health`.
+- Metrics endpoint: `GET /metrics`.
+
+## API base path
+- Versioned API: `/api/auth/v1/*`.
+- Public auth endpoints: `register`, `login`, `refresh`, `logout`, `change-password`.
+- Authenticated profile endpoints: `/me`, `/me/change-password`, `/me/avatar`.
+
+## Integration contracts
+- Gateway route: `/api/auth/{**catch-all}`.
+- Internal gRPC contract source: `building-blocks/TeamHub.GrpcContracts`.
+- Service flow: `frontend -> gw-nginx -> gw-api -> srv-auth`.
+
+## Configuration
+- Main config: `team-hub-auth/appsettings*.json`.
+- Optional local env: `.env` from `.env.example` (non-Production).
+- External dependencies: PostgreSQL and Redis.
+
+## Observability
+- Serilog logging.
+- OpenTelemetry traces/logs and Prometheus metrics.
+- Correlation/session/user logging middleware enabled in request pipeline.
+
+## Related docs
+- `AGENT.md`
+- `docs/auth.mb`
+- `docs/errors.mb`
